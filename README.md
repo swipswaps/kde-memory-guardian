@@ -30,7 +30,8 @@ KDE Memory Guardian is a lightweight, systemd-based monitoring service that:
 
 ### Automatic Memory Management
 - **Plasma Shell Monitoring**: Restarts if memory usage > 1.5GB
-- **KGlobalAccel Monitoring**: Restarts if memory usage > 1GB  
+- **KGlobalAccel Monitoring**: Restarts if memory usage > 1GB
+- **KWin Window Manager**: Restarts if memory usage > 800MB
 - **System Memory Monitoring**: Clears caches if usage > 80%
 - **Configurable Thresholds**: Easily adjustable via configuration
 
@@ -98,6 +99,7 @@ Edit `~/.local/bin/kde-memory-manager.sh` to adjust thresholds:
 MEMORY_THRESHOLD=80          # System memory threshold (%)
 PLASMA_MEMORY_THRESHOLD=1500000  # Plasma memory threshold (KB)
 KGLOBAL_MEMORY_THRESHOLD=1000000 # KGlobal memory threshold (KB)
+KWIN_MEMORY_THRESHOLD=800000     # KWin memory threshold (KB)
 CHECK_INTERVAL=300           # Check interval (seconds)
 ```
 

@@ -43,6 +43,10 @@ readonly PLASMA_MEMORY_THRESHOLD=${PLASMA_MEMORY_THRESHOLD:-1500000}
 # WHY: kglobalacceld normally uses 20-50MB, >1GB indicates severe leak
 readonly KGLOBAL_MEMORY_THRESHOLD=${KGLOBAL_MEMORY_THRESHOLD:-1000000}
 
+# KWin memory threshold (KB) - restart kwin if exceeded
+# WHY: kwin normally uses 100-300MB, >800MB indicates memory leak or accumulation
+readonly KWIN_MEMORY_THRESHOLD=${KWIN_MEMORY_THRESHOLD:-800000}
+
 # Check interval (seconds) - how often to monitor memory usage
 # WHY: 5 minutes balances responsiveness with system resource usage
 readonly CHECK_INTERVAL=${CHECK_INTERVAL:-300}
@@ -160,7 +164,7 @@ restart_plasmashell() {
 # HOW: Kill process and let KDE auto-restart it (standard KDE behavior)
 restart_kglobalacceld() {
     log_message "Restarting kglobalacceld due to high memory usage"
-    
+
     # Kill kglobalacceld processes
     if killall kglobalacceld 2>/dev/null; then
         log_message "Successfully terminated kglobalacceld processes"
@@ -168,6 +172,37 @@ restart_kglobalacceld() {
         # No manual restart required unlike plasmashell
     else
         log_message "No kglobalacceld processes found to terminate"
+    fi
+}
+
+# Restart KWin window manager (X11 or Wayland)
+# WHY: KWin can accumulate memory from compositor effects, window decorations, and screen edges
+# HOW: Use --replace flag for safe restart without losing window state
+restart_kwin() {
+    log_message "Restarting KWin due to high memory usage"
+
+    # Send desktop notification if notify-send is available
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send "KDE Memory Guardian" "Restarting KWin window manager to free memory" --icon=dialog-information --urgency=low &
+    fi
+
+    # Detect session type and restart appropriate KWin variant
+    if [[ "${XDG_SESSION_TYPE:-x11}" == "wayland" ]]; then
+        # Wayland session - restart kwin_wayland
+        log_message "Detected Wayland session, restarting kwin_wayland"
+        if kwin_wayland --replace >/dev/null 2>&1; then
+            log_message "Successfully restarted kwin_wayland"
+        else
+            log_message "ERROR: Failed to restart kwin_wayland"
+        fi
+    else
+        # X11 session - restart kwin_x11
+        log_message "Detected X11 session, restarting kwin_x11"
+        if kwin_x11 --replace >/dev/null 2>&1; then
+            log_message "Successfully restarted kwin_x11"
+        else
+            log_message "ERROR: Failed to restart kwin_x11"
+        fi
     fi
 }
 
@@ -208,9 +243,10 @@ check_and_manage_memory() {
     local system_mem_usage=$(get_system_memory_usage)
     local plasma_memory=$(get_process_memory "plasmashell")
     local kglobal_memory=$(get_process_memory "kglobalacceld")
-    
+    local kwin_memory=$(get_process_memory "kwin")
+
     # Log current status for monitoring and debugging
-    log_message "Memory check - System: ${system_mem_usage}%, Plasma: ${plasma_memory}KB, KGlobal: ${kglobal_memory}KB"
+    log_message "Memory check - System: ${system_mem_usage}%, Plasma: ${plasma_memory}KB, KGlobal: ${kglobal_memory}KB, KWin: ${kwin_memory}KB"
     
     # Track if any restart actions were taken
     local restart_needed=false
@@ -222,10 +258,17 @@ check_and_manage_memory() {
         restart_needed=true
     fi
     
-    # Check kglobalacceld memory usage against threshold  
+    # Check kglobalacceld memory usage against threshold
     if [[ $kglobal_memory -gt $KGLOBAL_MEMORY_THRESHOLD ]]; then
         log_message "ALERT: kglobalacceld memory usage too high: ${kglobal_memory}KB > ${KGLOBAL_MEMORY_THRESHOLD}KB"
         restart_kglobalacceld
+        restart_needed=true
+    fi
+
+    # Check KWin memory usage against threshold
+    if [[ $kwin_memory -gt $KWIN_MEMORY_THRESHOLD ]]; then
+        log_message "ALERT: KWin memory usage too high: ${kwin_memory}KB > ${KWIN_MEMORY_THRESHOLD}KB"
+        restart_kwin
         restart_needed=true
     fi
     
