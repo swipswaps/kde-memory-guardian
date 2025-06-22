@@ -77,32 +77,68 @@ readonly MAX_LOG_SIZE=${MAX_LOG_SIZE:-10485760}  # 10MB
 # These functions provide logging, process monitoring, and system operations
 # =============================================================================
 
-# Logging function with timestamp and structured format
-# PARAMETERS: $1 = log message
-# OUTPUT: Timestamped log entry to both file and stdout (if interactive)
+# Enhanced logging function with PRF compliance and comprehensive visibility
+# WHAT: Provides comprehensive audit trail with status tags and dual output
+# WHY: Enables forensic verification, real-time troubleshooting, and prevents silent failures
+# HOW: Uses tee for dual output (terminal + log) with structured status tags
+# PARAMETERS: $1 = log message, $2 = log level (optional, defaults to INFO)
 log_message() {
     local message="$1"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    local log_entry="[$timestamp] $message"
-    
+    local level="${2:-INFO}"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S %Z')
+
+    # Format message with appropriate emoji and tag for enhanced visibility
+    local formatted_message=""
+    case "$level" in
+        "START") formatted_message="[START] 🚀 $message" ;;
+        "STEP")  formatted_message="[STEP] 🔄 $message" ;;
+        "INFO")  formatted_message="[INFO] ℹ️ $message" ;;
+        "WARN")  formatted_message="[WARN] ⚠️ $message" ;;
+        "ERROR") formatted_message="[ERROR] ❌ $message" ;;
+        "OK")    formatted_message="[OK] ✅ $message" ;;
+        "DONE")  formatted_message="[DONE] 🎉 $message" ;;
+        "ALERT") formatted_message="[ALERT] 🚨 $message" ;;
+        *)       formatted_message="[INFO] ℹ️ $message" ;;
+    esac
+
     # Ensure log directory exists
     mkdir -p "$(dirname "$LOG_FILE")"
-    
-    # Write to log file
-    echo "$log_entry" >> "$LOG_FILE"
-    
-    # Also output to stdout if running interactively (for debugging)
-    if [[ -t 1 ]]; then
-        echo "$log_entry"
-    fi
-    
+
+    # Output to both terminal and log file for full PRF compliance
+    # This ensures no hidden failures and provides real-time visibility
+    echo "[$timestamp] $formatted_message" | tee -a "$LOG_FILE"
+
     # Rotate log file if it gets too large
     if [[ -f "$LOG_FILE" ]]; then
         local file_size=$(stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)
         if [[ $file_size -gt $MAX_LOG_SIZE ]]; then
             mv "$LOG_FILE" "${LOG_FILE}.old"
-            log_message "Log file rotated due to size limit"
+            echo "[$timestamp] [INFO] ℹ️ Log file rotated due to size limit" | tee -a "$LOG_FILE"
         fi
+    fi
+}
+
+# Log command execution with full stderr/stdout capture (PRF pattern)
+# WHAT: Executes commands with complete output logging and error handling
+# WHY: Ensures no silent failures and provides comprehensive audit trail
+# HOW: Uses tee to capture all output streams and provides status confirmation
+# PARAMETERS: $1 = description, $@ = command to execute
+log_command() {
+    local description="$1"
+    shift
+    local command=("$@")
+
+    log_message "Executing: $description" "STEP"
+    log_message "Command: ${command[*]}" "INFO"
+
+    # Execute command and capture all output with tee for dual visibility
+    if "${command[@]}" 2>&1 | tee -a "$LOG_FILE"; then
+        log_message "Command completed successfully: $description" "OK"
+        return 0
+    else
+        local exit_code=$?
+        log_message "Command failed with exit code $exit_code: $description" "ERROR"
+        return $exit_code
     fi
 }
 
@@ -140,37 +176,52 @@ get_system_memory_usage() {
 # WHY: plasmashell is the main KDE desktop shell - needs careful restart
 # HOW: Kill existing process, wait for cleanup, start new instance
 restart_plasmashell() {
-    log_message "Restarting plasmashell due to high memory usage"
-    
+    log_message "Restarting plasmashell due to high memory usage" "ALERT"
+
     # Send desktop notification if notify-send is available
     # This alerts the user that a restart is happening
     if command -v notify-send >/dev/null 2>&1; then
         notify-send "KDE Memory Guardian" "Restarting Plasma Shell to free memory" --icon=dialog-information --urgency=low &
     fi
-    
+
+    # Check if tray cache management is available for comprehensive restart
+    local tray_manager="$(dirname "${BASH_SOURCE[0]}")/../tools/plasma-tray-cache-manager.sh"
+    if [[ -f "$tray_manager" ]] && [[ -x "$tray_manager" ]]; then
+        log_message "Using comprehensive tray cache management for restart" "STEP"
+        if log_command "Comprehensive plasmashell restart with tray cache purge" "$tray_manager"; then
+            log_message "Comprehensive plasmashell restart completed successfully" "OK"
+            return 0
+        else
+            log_message "Comprehensive restart failed, falling back to simple restart" "WARN"
+        fi
+    fi
+
+    # Fallback to simple restart method
+    log_message "Performing simple plasmashell restart" "STEP"
+
     # Kill all plasmashell processes
     # Using killall is safer than kill -9 as it allows graceful shutdown
-    if killall plasmashell 2>/dev/null; then
-        log_message "Successfully terminated plasmashell processes"
+    if log_command "Terminate plasmashell processes" killall plasmashell; then
+        log_message "Successfully terminated plasmashell processes" "OK"
     else
-        log_message "No plasmashell processes found to terminate"
+        log_message "No plasmashell processes found to terminate" "WARN"
     fi
-    
+
     # Wait for processes to fully terminate
     # This prevents race conditions where new process starts before old one exits
     sleep 2
-    
+
     # Start new plasmashell instance using kstart
     # kstart is the KDE-recommended way to start desktop components
-    # Start in background and check if command succeeded
-    if kstart plasmashell >/dev/null 2>&1; then
-        log_message "Successfully started new plasmashell instance"
+    if log_command "Start new plasmashell instance" kstart plasmashell; then
+        log_message "Successfully started new plasmashell instance" "OK"
     else
-        log_message "ERROR: Failed to start new plasmashell instance"
+        log_message "Failed to start new plasmashell instance" "ERROR"
         # Send error notification
         if command -v notify-send >/dev/null 2>&1; then
             notify-send "KDE Memory Guardian" "Failed to restart Plasma Shell - manual intervention required" --icon=dialog-error --urgency=critical &
         fi
+        return 1
     fi
 }
 
@@ -178,15 +229,15 @@ restart_plasmashell() {
 # WHY: kglobalacceld handles global keyboard shortcuts - less critical than plasmashell
 # HOW: Kill process and let KDE auto-restart it (standard KDE behavior)
 restart_kglobalacceld() {
-    log_message "Restarting kglobalacceld due to high memory usage"
+    log_message "Restarting kglobalacceld due to high memory usage" "ALERT"
 
     # Kill kglobalacceld processes
-    if killall kglobalacceld 2>/dev/null; then
-        log_message "Successfully terminated kglobalacceld processes"
+    if log_command "Terminate kglobalacceld processes" killall kglobalacceld; then
+        log_message "Successfully terminated kglobalacceld processes" "OK"
         # KDE will automatically restart kglobalacceld when needed
         # No manual restart required unlike plasmashell
     else
-        log_message "No kglobalacceld processes found to terminate"
+        log_message "No kglobalacceld processes found to terminate" "WARN"
     fi
 }
 
@@ -194,7 +245,7 @@ restart_kglobalacceld() {
 # WHY: KWin can accumulate memory from compositor effects, window decorations, and screen edges
 # HOW: Use --replace flag for safe restart without losing window state
 restart_kwin() {
-    log_message "Restarting KWin due to high memory usage"
+    log_message "Restarting KWin due to high memory usage" "ALERT"
 
     # Send desktop notification if notify-send is available
     if command -v notify-send >/dev/null 2>&1; then
@@ -204,19 +255,19 @@ restart_kwin() {
     # Detect session type and restart appropriate KWin variant
     if [[ "${XDG_SESSION_TYPE:-x11}" == "wayland" ]]; then
         # Wayland session - restart kwin_wayland
-        log_message "Detected Wayland session, restarting kwin_wayland"
-        if kwin_wayland --replace >/dev/null 2>&1; then
-            log_message "Successfully restarted kwin_wayland"
+        log_message "Detected Wayland session, restarting kwin_wayland" "STEP"
+        if log_command "Restart kwin_wayland" kwin_wayland --replace; then
+            log_message "Successfully restarted kwin_wayland" "OK"
         else
-            log_message "ERROR: Failed to restart kwin_wayland"
+            log_message "Failed to restart kwin_wayland" "ERROR"
         fi
     else
         # X11 session - restart kwin_x11
-        log_message "Detected X11 session, restarting kwin_x11"
-        if kwin_x11 --replace >/dev/null 2>&1; then
-            log_message "Successfully restarted kwin_x11"
+        log_message "Detected X11 session, restarting kwin_x11" "STEP"
+        if log_command "Restart kwin_x11" kwin_x11 --replace; then
+            log_message "Successfully restarted kwin_x11" "OK"
         else
-            log_message "ERROR: Failed to restart kwin_x11"
+            log_message "Failed to restart kwin_x11" "ERROR"
         fi
     fi
 }
@@ -466,23 +517,25 @@ trap cleanup SIGTERM SIGINT
 
 main() {
     # Log startup information for debugging and monitoring
-    log_message "KDE Memory Guardian started (PID: $$)"
-    log_message "Configuration: Memory threshold: ${MEMORY_THRESHOLD}%, Plasma threshold: ${PLASMA_MEMORY_THRESHOLD}KB, KGlobal threshold: ${KGLOBAL_MEMORY_THRESHOLD}KB"
-    log_message "Check interval: ${CHECK_INTERVAL} seconds"
-    
+    log_message "KDE Memory Guardian started (PID: $$)" "START"
+    log_message "Configuration: Memory threshold: ${MEMORY_THRESHOLD}%, Plasma threshold: ${PLASMA_MEMORY_THRESHOLD}KB, KGlobal threshold: ${KGLOBAL_MEMORY_THRESHOLD}KB" "INFO"
+    log_message "KWin threshold: ${KWIN_MEMORY_THRESHOLD}KB, Klipper monitoring: ${MONITOR_KLIPPER}, Akonadi monitoring: ${MONITOR_AKONADI}" "INFO"
+    log_message "Check interval: ${CHECK_INTERVAL} seconds" "INFO"
+    log_message "Enhanced logging and PRF compliance active" "INFO"
+
     # Perform initial memory check
     check_and_manage_memory
-    
+
     # Main monitoring loop
     # Runs indefinitely until service is stopped or system shuts down
     while true; do
         # Sleep for the configured interval
         # Using sleep allows the script to be interrupted by signals
         sleep "$CHECK_INTERVAL"
-        
+
         # Perform memory check and management
         # Any errors in this function are logged but don't stop the service
-        check_and_manage_memory || log_message "ERROR: Memory check failed, continuing monitoring"
+        check_and_manage_memory || log_message "Memory check failed, continuing monitoring" "ERROR"
     done
 }
 
