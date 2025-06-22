@@ -1,0 +1,145 @@
+# KDE Memory Guardian - Systemd User Service Configuration
+#
+# This systemd service file defines how the KDE Memory Guardian runs as a
+# user service, ensuring it starts automatically with the user session and
+# runs continuously to monitor KDE memory usage.
+#
+# WHAT IT DOES:
+# - Runs the kde-memory-manager.sh script as a user service
+# - Automatically starts when the user logs in (graphical session)
+# - Restarts automatically if the script crashes or exits unexpectedly
+# - Limits resource usage to prevent the monitor from becoming a problem
+# - Provides proper logging integration with systemd journal
+#
+# WHY USER SERVICE:
+# - Runs in user context (can access KDE processes and user environment)
+# - No root privileges required (safer and more appropriate)
+# - Automatically starts/stops with user login/logout
+# - Can be controlled by the user without sudo access
+#
+# HOW TO USE:
+# - Install to ~/.config/systemd/user/kde-memory-manager.service
+# - Enable with: systemctl --user enable kde-memory-manager.service
+# - Start with: systemctl --user start kde-memory-manager.service
+# - Check status: systemctl --user status kde-memory-manager.service
+
+[Unit]
+# Service description shown in systemctl status and logs
+Description=KDE Memory Guardian - Automatic KDE Plasma memory leak prevention
+
+# Documentation reference for users and administrators
+Documentation=https://github.com/yourusername/kde-memory-guardian
+
+# Service dependencies and ordering
+# After: Wait for graphical session to be fully established before starting
+# This ensures KDE is running before we try to monitor it
+After=graphical-session.target
+
+# Wants: Soft dependency on graphical session
+# Service will start even if graphical-session.target fails
+Wants=graphical-session.target
+
+# Conflicts: Stop if user is logging out
+# Ensures clean shutdown when user session ends
+Conflicts=shutdown.target
+
+[Service]
+# Service type configuration
+# Type=simple: Service runs in foreground and doesn't fork
+# This is appropriate for our monitoring script that runs continuously
+Type=simple
+
+# Command to execute
+# %h expands to user's home directory (systemd variable)
+# This makes the service portable across different users
+ExecStart=%h/.local/bin/kde-memory-manager.sh
+
+# Restart configuration
+# Restart=always: Always restart if service exits (crash protection)
+# This ensures monitoring continues even if script encounters errors
+Restart=always
+
+# RestartSec: Wait 30 seconds before restarting after failure
+# Prevents rapid restart loops that could consume resources
+RestartSec=30
+
+# Environment variables required for KDE interaction
+# DISPLAY: Required for GUI applications and kstart command
+# XDG_RUNTIME_DIR: Required for user session integration
+Environment=DISPLAY=:0
+Environment=XDG_RUNTIME_DIR=%t
+
+# Working directory (user's home directory)
+WorkingDirectory=%h
+
+# Security and resource limits
+# These prevent the monitoring service from becoming a resource problem
+
+# Memory limit: Maximum 50MB RAM usage
+# WHY: Monitoring script should be lightweight, 50MB is generous
+MemoryMax=50M
+
+# CPU limit: Maximum 5% CPU usage
+# WHY: Monitoring should have minimal performance impact
+CPUQuota=5%
+
+# Process limit: Maximum 10 processes/threads
+# WHY: Simple bash script shouldn't need many processes
+TasksMax=10
+
+# File descriptor limit: Maximum 64 open files
+# WHY: Script only needs a few files (log, /proc entries)
+LimitNOFILE=64
+
+# Disable core dumps (not needed for monitoring script)
+LimitCORE=0
+
+# Logging configuration
+# StandardOutput/StandardError: Send all output to systemd journal
+# This integrates with system logging and allows viewing with journalctl
+StandardOutput=journal
+StandardError=journal
+
+# SyslogIdentifier: Tag for log entries (makes filtering easier)
+# Use: journalctl --user -t kde-memory-guardian
+SyslogIdentifier=kde-memory-guardian
+
+# Additional security hardening
+# These options improve security by limiting what the service can do
+
+# NoNewPrivileges: Prevent privilege escalation
+# WHY: Monitoring script doesn't need elevated privileges
+NoNewPrivileges=true
+
+# PrivateTmp: Use private /tmp directory
+# WHY: Isolates temporary files from other processes
+PrivateTmp=true
+
+# ProtectSystem: Make system directories read-only
+# WHY: Monitoring script only needs to read system info, not modify it
+ProtectSystem=strict
+
+# ProtectHome: Limit access to other users' home directories
+# WHY: Script only needs access to current user's home
+ProtectHome=read-only
+
+# Capability restrictions
+# CapabilityBoundingSet: Limit available capabilities
+# WHY: Script doesn't need any special capabilities
+CapabilityBoundingSet=
+
+# SystemCallFilter: Restrict available system calls (advanced security)
+# Allow only essential system calls for basic script operation
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources @mount
+
+[Install]
+# Installation configuration
+# WantedBy: Which target should include this service
+# default.target: Standard target for user services
+# This ensures the service starts automatically when user logs in
+WantedBy=default.target
+
+# Also: Alternative target for graphical sessions
+# Provides redundancy in case default.target doesn't include graphical services
+Also=graphical-session.target
