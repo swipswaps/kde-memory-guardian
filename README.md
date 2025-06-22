@@ -32,6 +32,8 @@ KDE Memory Guardian is a lightweight, systemd-based monitoring service that:
 - **Plasma Shell Monitoring**: Restarts if memory usage > 1.5GB
 - **KGlobalAccel Monitoring**: Restarts if memory usage > 1GB
 - **KWin Window Manager**: Restarts if memory usage > 800MB
+- **Klipper Replacement**: Advanced clipboard system with SQL backend
+- **Akonadi Management**: Monitors and optimizes Akonadi services
 - **System Memory Monitoring**: Clears caches if usage > 80%
 - **Configurable Thresholds**: Easily adjustable via configuration
 
@@ -58,12 +60,17 @@ KDE Memory Guardian is a lightweight, systemd-based monitoring service that:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/kde-memory-guardian.git
+git clone https://github.com/swipswaps/kde-memory-guardian.git
 cd kde-memory-guardian
 
 # Run the automated installer
 chmod +x install.sh
 ./install.sh
+
+# The installer will offer additional optimizations:
+# - Klipper replacement (if memory usage > 100MB)
+# - Apple A1286/older hardware optimizations
+# - System-specific memory management tuning
 
 # Verify installation
 systemctl --user status kde-memory-manager.service
@@ -116,6 +123,49 @@ CHECK_INTERVAL=300           # Check interval (seconds)
 - **Uptime Stability**: Weeks without issues
 
 **Result: 56% reduction in RAM usage, 75% reduction in swap pressure**
+
+## 🛠️ Comprehensive System Solutions
+
+### **Klipper Replacement System**
+KDE Memory Guardian includes a complete Klipper replacement that addresses memory leaks and provides superior functionality:
+
+```bash
+# Automatic detection and replacement during installation
+# Or run manually:
+./tools/klipper-replacement.sh
+```
+
+**Benefits:**
+- **Eliminates Klipper memory leaks** (observed: 115.9MB swap usage)
+- **SQLite-based storage** with unlimited history
+- **Advanced search and categorization**
+- **Source application tracking**
+- **Automatic deduplication**
+- **KDE integration** with global shortcuts
+
+### **Apple A1286 Optimization**
+Specialized optimizations for Apple MacBook Pro A1286 and similar older hardware:
+
+```bash
+# Automatic detection during installation
+# Or run manually:
+./tools/apple-a1286-optimizer.sh
+```
+
+**Optimizations:**
+- **Intel HD3000 GPU settings** for optimal compositor performance
+- **Memory management tuning** for 4-8GB systems
+- **KDE service optimization** for older hardware
+- **Thermal management** improvements
+- **Power efficiency** enhancements
+
+### **Akonadi Management**
+Intelligent Akonadi service management to prevent resource waste:
+
+- **Usage Detection**: Monitors if Akonadi is actually needed
+- **Memory Thresholds**: Stops services when memory usage exceeds limits
+- **Application Awareness**: Keeps running when KMail/Kontact are active
+- **Automatic Restart**: Restarts services when needed applications launch
 
 ## 🔧 Advanced Configuration
 

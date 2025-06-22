@@ -246,6 +246,68 @@ EOF
     log_success "Memory monitoring aliases added to ~/.bashrc"
 }
 
+# Offer additional optimizations based on system detection
+offer_system_optimizations() {
+    log_info "Checking for additional optimization opportunities..."
+
+    # Check if Klipper is running and using excessive memory
+    local klipper_memory=0
+    if pgrep -f klipper >/dev/null 2>&1; then
+        klipper_memory=$(ps -eo rss,comm | grep klipper | awk '{sum+=$1} END {print sum+0}')
+    fi
+
+    # Check system memory
+    local memory_total=$(free -m | awk '/^Mem:/ {print $2}')
+
+    # Check for Intel graphics
+    local has_intel_gpu=false
+    if lspci | grep -qi "intel.*graphics\|intel.*hd"; then
+        has_intel_gpu=true
+    fi
+
+    echo
+    log_info "System Analysis Results:"
+    echo "   • Total RAM: ${memory_total}MB"
+    echo "   • Klipper memory usage: ${klipper_memory}KB"
+    echo "   • Intel GPU detected: $has_intel_gpu"
+
+    # Offer Klipper replacement if memory usage is high
+    if [[ $klipper_memory -gt 100000 ]]; then
+        echo
+        log_warning "Klipper is using ${klipper_memory}KB memory (>100MB)"
+        echo "Would you like to replace Klipper with an advanced clipboard system? (y/N)"
+        read -p "> " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            if [[ -f "$SCRIPT_DIR/tools/klipper-replacement.sh" ]]; then
+                log_info "Running Klipper replacement..."
+                chmod +x "$SCRIPT_DIR/tools/klipper-replacement.sh"
+                "$SCRIPT_DIR/tools/klipper-replacement.sh"
+            else
+                log_warning "Klipper replacement script not found"
+            fi
+        fi
+    fi
+
+    # Offer Apple A1286 optimizations for older hardware
+    if [[ $memory_total -le 8000 ]] && [[ "$has_intel_gpu" == true ]]; then
+        echo
+        log_info "Detected older hardware configuration suitable for A1286 optimizations"
+        echo "Would you like to apply optimizations for older Apple/Intel hardware? (y/N)"
+        read -p "> " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            if [[ -f "$SCRIPT_DIR/tools/apple-a1286-optimizer.sh" ]]; then
+                log_info "Running Apple A1286 optimizations..."
+                chmod +x "$SCRIPT_DIR/tools/apple-a1286-optimizer.sh"
+                "$SCRIPT_DIR/tools/apple-a1286-optimizer.sh"
+            else
+                log_warning "Apple A1286 optimizer script not found"
+            fi
+        fi
+    fi
+}
+
 # Configure log rotation to prevent log files from growing too large
 configure_log_rotation() {
     log_info "Configuring log rotation..."
@@ -361,6 +423,7 @@ main() {
     configure_kde_optimizations
     add_monitoring_aliases
     configure_log_rotation
+    offer_system_optimizations
     
     # Verify everything worked correctly
     if verify_installation; then
