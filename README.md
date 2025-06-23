@@ -70,6 +70,11 @@ kde-memory-guardian/
 │   ├── setup_and_run.sh           # Launch script
 │   └── clipboard_api.js            # Backend API server
 ├── tools/                          # Management scripts
+│   ├── memory-pressure/            # Multi-tier memory protection
+│   │   ├── install-earlyoom.sh     # Tier 1: Proactive OOM prevention
+│   │   ├── install-nohang.sh       # Tier 2: Advanced memory management
+│   │   ├── configure-systemd-oomd.sh # Tier 3: Emergency fallback
+│   │   └── unified-memory-manager.sh # Unified management interface
 │   ├── clipboard-widget-manager.sh # KDE widget management
 │   ├── integrate-custom-clipboard.sh # Full system integration
 │   └── advanced-clipboard-widget.sh # Taskbar integration
@@ -185,6 +190,30 @@ cd clipboard-ui && ./setup_and_run.sh
 - 💾 **Export Capabilities:** Download data in multiple formats
 
 See [docs/CLIPBOARD_REPLACEMENT.md](docs/CLIPBOARD_REPLACEMENT.md) for complete documentation.
+
+### **Multi-Tier Memory Protection**
+KDE Memory Guardian now includes a comprehensive three-tier memory protection system:
+
+```bash
+# Install all protection tiers
+./tools/memory-pressure/unified-memory-manager.sh install
+
+# Check protection status
+./tools/memory-pressure/unified-memory-manager.sh status
+```
+
+**Protection Tiers:**
+- **🛡️ Tier 1 (earlyoom):** Proactive OOM prevention at 15% memory threshold
+- **🧠 Tier 2 (nohang):** Advanced memory management with process prioritization
+- **⚡ Tier 3 (systemd-oomd):** Emergency kernel-level fallback protection
+
+**Benefits:**
+- **Prevents system freezes** during memory pressure
+- **KDE-aware process selection** protects desktop components
+- **Coordinated protection** with multiple fallback layers
+- **Minimal resource usage** (<10MB total for all tiers)
+- **Industry-proven tools** with thousands of GitHub stars
+- **Automatic startup** and service management
 
 ### **Apple A1286 Optimization**
 Specialized optimizations for Apple MacBook Pro A1286 and similar older hardware:
