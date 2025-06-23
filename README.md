@@ -216,7 +216,8 @@ KDE Memory Guardian now includes a comprehensive three-tier memory protection sy
 - **Automatic startup** and service management
 
 **Testing Status:** ✅ **Phase 1 Complete** - Local testing verified on Fedora
-See [docs/TESTING_RESULTS.md](docs/TESTING_RESULTS.md) for comprehensive test results.
+**Installation Status:** ⏳ **Ready for Deployment** - Awaiting sudo access
+See [docs/TESTING_RESULTS.md](docs/TESTING_RESULTS.md) for test results and [docs/INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md) for installation commands.
 
 ### **Apple A1286 Optimization**
 Specialized optimizations for Apple MacBook Pro A1286 and similar older hardware:
