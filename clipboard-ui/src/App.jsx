@@ -61,7 +61,7 @@ import ChartSelector from './components/ChartSelector'
 import SmartSuggestions from './components/SmartSuggestions'
 import SimpleTest from './components/SimpleTest'
 import SmartInsights from './components/SmartInsights'
-import MemoryDashboard from './components/MemoryDashboard'
+import ImprovedMemoryDashboard from './components/ImprovedMemoryDashboard'
 
 // Focused on the most useful chart types based on research
 const CHART_TYPES = [
@@ -804,7 +804,7 @@ function App() {
 
         {/* Memory Protection Dashboard Tab */}
         {currentTab === 1 && (
-          <MemoryDashboard />
+          <ImprovedMemoryDashboard />
         )}
       </Container>
 
