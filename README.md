@@ -56,6 +56,31 @@ KDE Memory Guardian is a lightweight, systemd-based monitoring service that:
 - **Privileges**: User-level (no root required for service)
 - **Dependencies**: bash, ps, killall, kstart (standard KDE tools)
 
+## 📁 Repository Structure
+
+```
+kde-memory-guardian/
+├── clipboard-ui/                    # Material UI + D3.js Clipboard Visualizer
+│   ├── src/                        # React application source
+│   │   ├── App.jsx                 # Main application component
+│   │   ├── components/             # UI components
+│   │   ├── charts/                 # D3.js chart implementations
+│   │   └── services/               # API services
+│   ├── package.json                # Node.js dependencies
+│   ├── setup_and_run.sh           # Launch script
+│   └── clipboard_api.js            # Backend API server
+├── tools/                          # Management scripts
+│   ├── clipboard-widget-manager.sh # KDE widget management
+│   ├── integrate-custom-clipboard.sh # Full system integration
+│   └── advanced-clipboard-widget.sh # Taskbar integration
+├── docs/                           # Documentation
+│   ├── CLIPBOARD_REPLACEMENT.md    # Clipboard system guide
+│   └── TROUBLESHOOTING.md          # Common issues
+├── src/                            # Core memory management
+│   └── kde-memory-manager.sh       # Main service script
+└── install.sh                     # Main installer
+```
+
 ## 🚀 Quick Installation
 
 ```bash
@@ -133,18 +158,31 @@ KDE Memory Guardian includes a complete Klipper replacement with D3.js database-
 # Automatic detection and replacement during installation
 # Or run manually:
 ./tools/integrate-custom-clipboard.sh
+
+# Launch Material UI interface:
+cd clipboard-ui && ./setup_and_run.sh
+# Access at: http://localhost:3000
 ```
 
 **Benefits:**
 - **Eliminates Klipper memory leaks** (100MB+ → <5MB)
 - **D3.js visualizations** with usage analytics and insights
-- **Material UI interface** with responsive design
+- **Material UI interface** with responsive design and 9 chart types
 - **SQLite database backend** with unlimited history
 - **Advanced search and categorization** with full-text search
 - **Source application tracking** and relationship mapping
 - **Automatic deduplication** and compression
 - **KDE system tray integration** with seamless widget management
 - **REST API** for programmatic access
+- **Real-time clipboard monitoring** with live updates
+
+**Material UI Features:**
+- 🎯 **9 Chart Types:** Bar, Pie, Line, Scatter, Bubble, Donut, Gantt, Treemap, Heatmap
+- 📊 **Live Dashboard:** Real-time statistics and insights
+- 🎨 **Modern Interface:** Material Design with responsive layout
+- 📱 **Mobile Friendly:** Works on desktop and mobile devices
+- 🔍 **Advanced Filtering:** Search, categorize, and analyze clipboard data
+- 💾 **Export Capabilities:** Download data in multiple formats
 
 See [docs/CLIPBOARD_REPLACEMENT.md](docs/CLIPBOARD_REPLACEMENT.md) for complete documentation.
 
