@@ -228,8 +228,25 @@ KDE Memory Guardian now includes a comprehensive three-tier memory protection sy
 - **Protection:** Active monitoring of high-risk processes (VS Code, Chrome)
 - **Material UI:** Clipboard system continues operating normally
 
+### **🎨 Real-Time Dashboard**
+**Live monitoring dashboard with comprehensive system visibility!**
+
+**Access Dashboard:** http://localhost:3003
+**Features:**
+- **📊 Real-Time Charts:** D3.js visualizations updating every 2 seconds
+- **🛡️ Protection Status:** Multi-tier protection monitoring (earlyoom + nohang)
+- **📋 Clipboard Analytics:** Advanced data visualization and insights
+- **🔌 WebSocket Integration:** Live data streaming with connection management
+- **📱 Responsive Design:** Material UI components with professional layout
+
+**Services:**
+- **Enhanced Memory API:** http://localhost:3002 (WebSocket enabled)
+- **Material UI Dashboard:** http://localhost:3003 (Tabbed interface)
+- **Clipboard API:** http://localhost:3001 (Data source)
+
 **Testing Status:** ✅ **Phase 1 Complete** - Local testing verified on Fedora
 **Installation Status:** ✅ **SUCCESSFULLY INSTALLED** - Multi-tier protection active
+**Dashboard Status:** ✅ **REAL-TIME MONITORING ACTIVE** - Live dashboard with WebSocket integration
 See [docs/INSTALLATION_SUCCESS.md](docs/INSTALLATION_SUCCESS.md) for installation results, [docs/TESTING_RESULTS.md](docs/TESTING_RESULTS.md) for test results, and [docs/INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md) for installation commands.
 
 ### **Apple A1286 Optimization**
