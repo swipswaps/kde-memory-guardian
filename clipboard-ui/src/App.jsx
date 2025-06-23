@@ -28,6 +28,8 @@ import {
   MenuItem,
   Collapse,
   IconButton,
+  Tabs,
+  Tab,
 } from '@mui/material'
 import {
   BarChart,
@@ -49,6 +51,8 @@ import {
   Share,
   Timeline,
   AutoGraph,
+  Memory,
+  Dashboard,
 } from '@mui/icons-material'
 import ClipboardDataService from './services/ClipboardDataService'
 import SimpleChartRenderer from './components/SimpleChartRenderer'
@@ -57,6 +61,7 @@ import ChartSelector from './components/ChartSelector'
 import SmartSuggestions from './components/SmartSuggestions'
 import SimpleTest from './components/SimpleTest'
 import SmartInsights from './components/SmartInsights'
+import MemoryDashboard from './components/MemoryDashboard'
 
 // Focused on the most useful chart types based on research
 const CHART_TYPES = [
@@ -80,6 +85,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('')
   const [contentTypeFilter, setContentTypeFilter] = useState('all')
   const [showDataPreview, setShowDataPreview] = useState(false)
+  const [currentTab, setCurrentTab] = useState(0)
 
   // Load clipboard data on component mount
   useEffect(() => {
@@ -333,6 +339,10 @@ function App() {
     loadClipboardData()
   }
 
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue)
+  }
+
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value)
   }
@@ -403,10 +413,30 @@ function App() {
             )}
           </Box>
         </Toolbar>
+
+        {/* Navigation Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'rgba(255,255,255,0.2)' }}>
+          <Tabs
+            value={currentTab}
+            onChange={handleTabChange}
+            sx={{
+              '& .MuiTab-root': {
+                color: 'rgba(255,255,255,0.7)',
+                '&.Mui-selected': { color: 'white' }
+              },
+              '& .MuiTabs-indicator': { backgroundColor: 'white' }
+            }}
+          >
+            <Tab icon={<Dashboard />} label="Clipboard Analytics" />
+            <Tab icon={<Memory />} label="Memory Protection" />
+          </Tabs>
+        </Box>
       </AppBar>
 
       <Container maxWidth="xl" sx={{ mt: 3, pb: 10 }}>
-        <Grid container spacing={3}>
+        {/* Tab Content */}
+        {currentTab === 0 && (
+          <Grid container spacing={3}>
           {/* Dashboard Overview */}
           <Grid item xs={12}>
             <Paper
@@ -770,6 +800,12 @@ function App() {
             </Card>
           </Grid>
         </Grid>
+        )}
+
+        {/* Memory Protection Dashboard Tab */}
+        {currentTab === 1 && (
+          <MemoryDashboard />
+        )}
       </Container>
 
       {/* Speed Dial for Quick Actions */}
