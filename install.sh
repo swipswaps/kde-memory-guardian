@@ -275,16 +275,36 @@ offer_system_optimizations() {
     if [[ $klipper_memory -gt 100000 ]]; then
         echo
         log_warning "Klipper is using ${klipper_memory}KB memory (>100MB)"
-        echo "Would you like to replace Klipper with an advanced clipboard system? (y/N)"
+        echo "Would you like to replace Klipper with an advanced D3.js database-driven clipboard system? (y/N)"
+        echo "Benefits: Unlimited history, Material UI, <5MB memory usage, D3.js visualizations"
         read -p "> " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            if [[ -f "$SCRIPT_DIR/tools/klipper-replacement.sh" ]]; then
-                log_info "Running Klipper replacement..."
-                chmod +x "$SCRIPT_DIR/tools/klipper-replacement.sh"
-                "$SCRIPT_DIR/tools/klipper-replacement.sh"
+            if [[ -f "$SCRIPT_DIR/tools/integrate-custom-clipboard.sh" ]]; then
+                log_info "Installing advanced clipboard system..."
+                chmod +x "$SCRIPT_DIR/tools/integrate-custom-clipboard.sh"
+                "$SCRIPT_DIR/tools/integrate-custom-clipboard.sh"
             else
-                log_warning "Klipper replacement script not found"
+                log_warning "Clipboard integration script not found"
+                log_info "You can install it manually later: ./tools/integrate-custom-clipboard.sh"
+            fi
+        fi
+    else
+        # Offer clipboard replacement even if Klipper memory usage is low
+        echo
+        log_info "Advanced Clipboard System Available"
+        echo "Replace default Klipper with D3.js database-driven clipboard tools? (y/N)"
+        echo "Benefits: Unlimited history, Material UI, advanced search, visualizations"
+        read -p "> " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            if [[ -f "$SCRIPT_DIR/tools/integrate-custom-clipboard.sh" ]]; then
+                log_info "Installing advanced clipboard system..."
+                chmod +x "$SCRIPT_DIR/tools/integrate-custom-clipboard.sh"
+                "$SCRIPT_DIR/tools/integrate-custom-clipboard.sh"
+            else
+                log_warning "Clipboard integration script not found"
+                log_info "You can install it manually later: ./tools/integrate-custom-clipboard.sh"
             fi
         fi
     fi

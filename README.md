@@ -126,22 +126,27 @@ CHECK_INTERVAL=300           # Check interval (seconds)
 
 ## 🛠️ Comprehensive System Solutions
 
-### **Klipper Replacement System**
-KDE Memory Guardian includes a complete Klipper replacement that addresses memory leaks and provides superior functionality:
+### **Advanced Clipboard System**
+KDE Memory Guardian includes a complete Klipper replacement with D3.js database-driven tools and Material UI interface:
 
 ```bash
 # Automatic detection and replacement during installation
 # Or run manually:
-./tools/klipper-replacement.sh
+./tools/integrate-custom-clipboard.sh
 ```
 
 **Benefits:**
-- **Eliminates Klipper memory leaks** (observed: 115.9MB swap usage)
-- **SQLite-based storage** with unlimited history
-- **Advanced search and categorization**
-- **Source application tracking**
-- **Automatic deduplication**
-- **KDE integration** with global shortcuts
+- **Eliminates Klipper memory leaks** (100MB+ → <5MB)
+- **D3.js visualizations** with usage analytics and insights
+- **Material UI interface** with responsive design
+- **SQLite database backend** with unlimited history
+- **Advanced search and categorization** with full-text search
+- **Source application tracking** and relationship mapping
+- **Automatic deduplication** and compression
+- **KDE system tray integration** with seamless widget management
+- **REST API** for programmatic access
+
+See [docs/CLIPBOARD_REPLACEMENT.md](docs/CLIPBOARD_REPLACEMENT.md) for complete documentation.
 
 ### **Apple A1286 Optimization**
 Specialized optimizations for Apple MacBook Pro A1286 and similar older hardware:
