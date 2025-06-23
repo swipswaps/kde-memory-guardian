@@ -53,6 +53,7 @@ import {
   AutoGraph,
   Memory,
   Dashboard,
+  Hub,
 } from '@mui/icons-material'
 import ClipboardDataService from './services/ClipboardDataService'
 import SimpleChartRenderer from './components/SimpleChartRenderer'
@@ -62,6 +63,7 @@ import SmartSuggestions from './components/SmartSuggestions'
 import SimpleTest from './components/SimpleTest'
 import SmartInsights from './components/SmartInsights'
 import ImprovedMemoryDashboard from './components/ImprovedMemoryDashboard'
+import Neo4jVisualizer from './components/Neo4jVisualizer'
 
 // Focused on the most useful chart types based on research
 const CHART_TYPES = [
@@ -71,6 +73,7 @@ const CHART_TYPES = [
   { id: 'pie', name: 'Pie Chart', icon: <PieChart />, color: '#dc004e', description: 'Parts of a whole (3-8 categories)' },
   { id: 'wordcloud', name: 'Word Cloud', icon: <DataUsage />, color: '#9c27b0', description: 'Text frequency visualization' },
   { id: 'gantt', name: 'Timeline', icon: <Timeline />, color: '#f57c00', description: 'Project schedules and timelines' },
+  { id: 'network', name: 'Network Graph', icon: <Hub />, color: '#00695c', description: 'Neo4j-style relationship visualization' },
 ]
 
 function App() {
@@ -209,6 +212,9 @@ function App() {
       case 'timeline':
         result = processForTimeline(data)
         break
+      case 'network':
+        result = processForNetworkGraph(data)
+        break
       default:
         result = data
     }
@@ -328,6 +334,12 @@ function App() {
       start: item.timestamp,
       end: item.timestamp
     }))
+  }
+
+  const processForNetworkGraph = (data) => {
+    // Return raw data for Neo4jVisualizer to process
+    // The Neo4jVisualizer component handles the complex graph processing
+    return data
   }
 
   const handleChartChange = (chartType) => {

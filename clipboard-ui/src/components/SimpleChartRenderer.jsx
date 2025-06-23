@@ -1,6 +1,7 @@
 import React from 'react'
 import { Box, Typography, Paper, LinearProgress, Chip } from '@mui/material'
 import DataTable from './DataTable'
+import Neo4jVisualizer from './Neo4jVisualizer'
 
 function SimpleChartRenderer({ data, chartType, rawData }) {
   console.log('SimpleChartRenderer:', { chartType, data, rawData })
@@ -8,6 +9,11 @@ function SimpleChartRenderer({ data, chartType, rawData }) {
   // Handle table view
   if (chartType === 'table') {
     return <DataTable data={rawData || data} title="Clipboard Data Explorer" />
+  }
+
+  // Handle network graph view
+  if (chartType === 'network') {
+    return <Neo4jVisualizer data={rawData || data} width={800} height={600} />
   }
 
   // Handle no data
@@ -355,7 +361,7 @@ function SimpleChartRenderer({ data, chartType, rawData }) {
         Chart type "{chartType}" not yet implemented
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-        Available: bar, pie, line, wordcloud, timeline, table
+        Available: bar, pie, line, wordcloud, timeline, network, table
       </Typography>
     </Box>
   )
