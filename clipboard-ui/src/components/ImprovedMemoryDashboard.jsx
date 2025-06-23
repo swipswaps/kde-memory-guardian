@@ -21,7 +21,9 @@ import {
   Tooltip,
   IconButton,
   Badge,
-  Skeleton
+  Skeleton,
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material';
 import { 
   green, red, orange, blue, grey 
@@ -40,7 +42,9 @@ import {
   PlayArrow,
   Stop,
   SignalWifiStatusbar4Bar,
-  SignalWifiOff
+  SignalWifiOff,
+  Timeline,
+  ShowChart
 } from '@mui/icons-material';
 import * as d3 from 'd3';
 import io from 'socket.io-client';
@@ -51,8 +55,11 @@ const ImprovedMemoryDashboard = () => {
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timelineData, setTimelineData] = useState([]);
+  const [timeRange, setTimeRange] = useState('5m'); // 5m, 15m, 1h, 6h
   const socketRef = useRef(null);
   const chartRef = useRef(null);
+  const timelineRef = useRef(null);
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -73,6 +80,7 @@ const ImprovedMemoryDashboard = () => {
     socket.on('memory_update', (data) => {
       setMemoryData(data);
       updateChart(data);
+      updateTimelineData(data);
     });
 
     socket.on('connect_error', (err) => {
@@ -85,6 +93,11 @@ const ImprovedMemoryDashboard = () => {
     };
   }, []);
 
+  // Update timeline chart when data changes
+  useEffect(() => {
+    updateTimelineChart();
+  }, [timelineData, timeRange]);
+
   // Toggle monitoring
   const toggleMonitoring = () => {
     if (socketRef.current) {
@@ -95,6 +108,54 @@ const ImprovedMemoryDashboard = () => {
         socketRef.current.emit('start_monitoring');
         setIsMonitoring(true);
       }
+    }
+  };
+
+  // Update timeline data with new memory readings
+  const updateTimelineData = (data) => {
+    if (!data?.memory) return;
+
+    const now = new Date();
+    const newDataPoint = {
+      timestamp: now,
+      memory: data.memory.memory.percent,
+      swap: data.memory.swap.percent,
+      memoryUsed: data.memory.memory.used,
+      swapUsed: data.memory.swap.used
+    };
+
+    setTimelineData(prevData => {
+      const maxPoints = getMaxDataPoints();
+      const updatedData = [...prevData, newDataPoint];
+
+      // Keep only the data points within the selected time range
+      const cutoffTime = new Date(now.getTime() - getTimeRangeMs());
+      const filteredData = updatedData.filter(point => point.timestamp >= cutoffTime);
+
+      // Limit to max points to prevent memory issues
+      return filteredData.slice(-maxPoints);
+    });
+  };
+
+  // Get maximum data points based on time range
+  const getMaxDataPoints = () => {
+    switch (timeRange) {
+      case '5m': return 300;   // 5 minutes * 60 seconds
+      case '15m': return 900;  // 15 minutes * 60 seconds
+      case '1h': return 1800;  // 1 hour * 30 (every 2 seconds)
+      case '6h': return 2160;  // 6 hours * 6 (every 10 seconds)
+      default: return 300;
+    }
+  };
+
+  // Get time range in milliseconds
+  const getTimeRangeMs = () => {
+    switch (timeRange) {
+      case '5m': return 5 * 60 * 1000;
+      case '15m': return 15 * 60 * 1000;
+      case '1h': return 60 * 60 * 1000;
+      case '6h': return 6 * 60 * 60 * 1000;
+      default: return 5 * 60 * 1000;
     }
   };
 
@@ -214,6 +275,197 @@ const ImprovedMemoryDashboard = () => {
     svg.append('g')
       .attr('transform', `translate(${margin.left},0)`)
       .call(d3.axisLeft(yScale).tickFormat(d => `${d}%`));
+  };
+
+  // Enhanced Timeline Chart with real-time updates
+  const updateTimelineChart = () => {
+    if (!timelineData.length || !timelineRef.current) return;
+
+    const svg = d3.select(timelineRef.current);
+    svg.selectAll("*").remove();
+
+    const width = 800;
+    const height = 300;
+    const margin = { top: 20, right: 80, bottom: 40, left: 60 };
+
+    // Set up scales
+    const xScale = d3.scaleTime()
+      .domain(d3.extent(timelineData, d => d.timestamp))
+      .range([margin.left, width - margin.right]);
+
+    const yScale = d3.scaleLinear()
+      .domain([0, 100])
+      .range([height - margin.bottom, margin.top]);
+
+    svg.attr('width', width).attr('height', height);
+
+    // Add gradient definitions for area charts
+    const defs = svg.append('defs');
+
+    // Memory gradient
+    const memoryGradient = defs.append('linearGradient')
+      .attr('id', 'memoryGradient')
+      .attr('gradientUnits', 'userSpaceOnUse')
+      .attr('x1', 0).attr('y1', height)
+      .attr('x2', 0).attr('y2', 0);
+
+    memoryGradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', blue[500])
+      .attr('stop-opacity', 0.1);
+
+    memoryGradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', blue[500])
+      .attr('stop-opacity', 0.6);
+
+    // Swap gradient
+    const swapGradient = defs.append('linearGradient')
+      .attr('id', 'swapGradient')
+      .attr('gradientUnits', 'userSpaceOnUse')
+      .attr('x1', 0).attr('y1', height)
+      .attr('x2', 0).attr('y2', 0);
+
+    swapGradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', orange[500])
+      .attr('stop-opacity', 0.1);
+
+    swapGradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', orange[500])
+      .attr('stop-opacity', 0.6);
+
+    // Create line generators
+    const memoryLine = d3.line()
+      .x(d => xScale(d.timestamp))
+      .y(d => yScale(d.memory))
+      .curve(d3.curveMonotoneX);
+
+    const swapLine = d3.line()
+      .x(d => xScale(d.timestamp))
+      .y(d => yScale(d.swap))
+      .curve(d3.curveMonotoneX);
+
+    // Create area generators
+    const memoryArea = d3.area()
+      .x(d => xScale(d.timestamp))
+      .y0(height - margin.bottom)
+      .y1(d => yScale(d.memory))
+      .curve(d3.curveMonotoneX);
+
+    const swapArea = d3.area()
+      .x(d => xScale(d.timestamp))
+      .y0(height - margin.bottom)
+      .y1(d => yScale(d.swap))
+      .curve(d3.curveMonotoneX);
+
+    // Add grid lines
+    svg.append('g')
+      .attr('class', 'grid')
+      .attr('transform', `translate(0,${height - margin.bottom})`)
+      .call(d3.axisBottom(xScale)
+        .tickSize(-height + margin.top + margin.bottom)
+        .tickFormat('')
+      )
+      .style('stroke-dasharray', '3,3')
+      .style('opacity', 0.3);
+
+    svg.append('g')
+      .attr('class', 'grid')
+      .attr('transform', `translate(${margin.left},0)`)
+      .call(d3.axisLeft(yScale)
+        .tickSize(-width + margin.left + margin.right)
+        .tickFormat('')
+      )
+      .style('stroke-dasharray', '3,3')
+      .style('opacity', 0.3);
+
+    // Add area charts
+    svg.append('path')
+      .datum(timelineData)
+      .attr('fill', 'url(#memoryGradient)')
+      .attr('d', memoryArea);
+
+    svg.append('path')
+      .datum(timelineData)
+      .attr('fill', 'url(#swapGradient)')
+      .attr('d', swapArea);
+
+    // Add line charts
+    svg.append('path')
+      .datum(timelineData)
+      .attr('fill', 'none')
+      .attr('stroke', blue[600])
+      .attr('stroke-width', 2)
+      .attr('d', memoryLine);
+
+    svg.append('path')
+      .datum(timelineData)
+      .attr('fill', 'none')
+      .attr('stroke', orange[600])
+      .attr('stroke-width', 2)
+      .attr('d', swapLine);
+
+    // Add axes
+    svg.append('g')
+      .attr('transform', `translate(0,${height - margin.bottom})`)
+      .call(d3.axisBottom(xScale).tickFormat(d3.timeFormat('%H:%M:%S')));
+
+    svg.append('g')
+      .attr('transform', `translate(${margin.left},0)`)
+      .call(d3.axisLeft(yScale).tickFormat(d => `${d}%`));
+
+    // Add legend
+    const legend = svg.append('g')
+      .attr('transform', `translate(${width - margin.right + 10}, ${margin.top})`);
+
+    legend.append('circle')
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', 6)
+      .style('fill', blue[600]);
+
+    legend.append('text')
+      .attr('x', 15)
+      .attr('y', 0)
+      .attr('dy', '0.35em')
+      .style('font-size', '12px')
+      .text('Memory');
+
+    legend.append('circle')
+      .attr('cx', 0)
+      .attr('cy', 20)
+      .attr('r', 6)
+      .style('fill', orange[600]);
+
+    legend.append('text')
+      .attr('x', 15)
+      .attr('y', 20)
+      .attr('dy', '0.35em')
+      .style('font-size', '12px')
+      .text('Swap');
+
+    // Add current values as dots
+    if (timelineData.length > 0) {
+      const lastPoint = timelineData[timelineData.length - 1];
+
+      svg.append('circle')
+        .attr('cx', xScale(lastPoint.timestamp))
+        .attr('cy', yScale(lastPoint.memory))
+        .attr('r', 4)
+        .attr('fill', blue[600])
+        .attr('stroke', 'white')
+        .attr('stroke-width', 2);
+
+      svg.append('circle')
+        .attr('cx', xScale(lastPoint.timestamp))
+        .attr('cy', yScale(lastPoint.swap))
+        .attr('r', 4)
+        .attr('fill', orange[600])
+        .attr('stroke', 'white')
+        .attr('stroke-width', 2);
+    }
   };
 
   const formatBytes = (bytes) => {
@@ -353,12 +605,46 @@ const ImprovedMemoryDashboard = () => {
 
       {memoryData && (
         <Grid container spacing={3}>
+          {/* Timeline Chart - Full Width */}
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Timeline /> Memory & Swap Usage Timeline
+                    {isMonitoring && (
+                      <Chip size="small" label="Live" color="success" variant="outlined" />
+                    )}
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={timeRange}
+                    exclusive
+                    onChange={(event, newTimeRange) => {
+                      if (newTimeRange !== null) {
+                        setTimeRange(newTimeRange);
+                      }
+                    }}
+                    size="small"
+                  >
+                    <ToggleButton value="5m">5m</ToggleButton>
+                    <ToggleButton value="15m">15m</ToggleButton>
+                    <ToggleButton value="1h">1h</ToggleButton>
+                    <ToggleButton value="6h">6h</ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <svg ref={timelineRef}></svg>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
           {/* Memory Usage Overview */}
           <Grid item xs={12} md={8}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Memory /> Memory & Swap Usage
+                  <ShowChart /> Current Usage
                   {isMonitoring && (
                     <Chip size="small" label="Live" color="success" variant="outlined" />
                   )}

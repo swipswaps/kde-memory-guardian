@@ -175,12 +175,22 @@ Following dashboard UX best practices:
 - Loading and error states
 - Interactive enhancements
 
+### **📋 Timeline Graph Enhancement - ADDED**
+**Problem:** Users needed historical context for memory usage patterns
+**Solution:**
+- **Real-Time Timeline:** Live updating line chart with memory and swap usage
+- **Time Range Controls:** 5m, 15m, 1h, 6h selectable time windows
+- **Area Charts:** Gradient-filled areas for better visual impact
+- **Current Value Indicators:** Live dots showing current readings
+- **Grid Lines:** Subtle grid for easier value reading
+- **Legend:** Clear identification of memory vs swap lines
+
 ### **📋 Future Enhancements**
 - Mobile responsiveness optimization
 - Advanced filtering and customization
-- Historical data visualization
 - Performance metrics dashboard
 - User preference settings
+- Alert threshold visualization on timeline
 
 ---
 
