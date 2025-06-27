@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-06-27T11:49:31.765053",
+  "selenium_tests": [
+    {
+      "test_name": "Dashboard Loading",
+      "status": "PASS",
+      "details": "Found 4 stat cards, title: \ud83d\udee1\ufe0f KDE Memory Guardian Dashboard"
+    },
+    {
+      "test_name": "API Endpoints",
+      "status": "PASS",
+      "details": "Stats API returned: ['system_memory', 'plasma_memory', 'kwin_memory', 'timestamp']"
+    },
+    {
+      "test_name": "Interactive Elements",
+      "status": "PASS",
+      "details": "Found 5 buttons, clicked refresh"
+    }
+  ],
+  "playwright_tests": [
+    {
+      "test_name": "Playwright Dashboard",
+      "status": "PASS",
+      "details": "Title: \ud83d\udee1\ufe0f KDE Memory Guardian Dashboard, Cards: 4"
+    },
+    {
+      "test_name": "Performance Metrics",
+      "status": "PASS",
+      "details": "Page loaded in 0.52 seconds"
+    }
+  ],
+  "dogtail_tests": [
+    {
+      "test_name": "Browser Accessibility",
+      "status": "PASS",
+      "details": "Browser process detected for accessibility testing"
+    }
+  ],
+  "screenshots": [
+    "selenium_screenshot_1751039373.png",
+    "playwright_screenshot_1751039375.png"
+  ]
+}
