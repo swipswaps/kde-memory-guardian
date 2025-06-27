@@ -164,28 +164,108 @@ class KDEMemoryGuardianHandler(http.server.SimpleHTTPRequestHandler):
         return results
 
     def restart_plasma(self):
-        """Actually restart Plasma shell"""
+        """Actually restart Plasma shell - REAL IMPLEMENTATION"""
         try:
             print("🔄 REAL OPERATION: Restarting Plasma shell...")
 
-            # Kill plasmashell
-            result1 = subprocess.run(['killall', 'plasmashell'],
-                                   capture_output=True, text=True)
+            # Get current plasma PID for verification
+            pid_before = subprocess.run(['pgrep', 'plasmashell'],
+                                      capture_output=True, text=True).stdout.strip()
+            print(f"Plasma PID before kill: {pid_before}")
 
-            # Wait a moment
-            time.sleep(2)
+            if not pid_before:
+                return {
+                    'action': 'restart_plasma',
+                    'status': 'ERROR',
+                    'details': 'No plasmashell process found to restart',
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'real_operation': True
+                }
 
-            # Start plasmashell
-            result2 = subprocess.run(['kstart', 'plasmashell'],
-                                   capture_output=True, text=True)
+            # Use the same approach that works from command line
+            # Run the bash script that we know works
+            script_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'kde-memory-manager.sh')
 
-            return {
-                'action': 'restart_plasma',
-                'status': 'SUCCESS',
-                'details': f'Plasma restarted - killall exit code: {result1.returncode}, kstart exit code: {result2.returncode}',
-                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
-                'real_operation': True
-            }
+            if os.path.exists(script_path):
+                # Use the proven working bash script
+                result = subprocess.run(['/bin/bash', script_path, 'restart-plasma'],
+                                      capture_output=True, text=True,
+                                      env=dict(os.environ, DISPLAY=':0'))
+
+                # Wait and verify
+                time.sleep(3)
+                pid_after = subprocess.run(['pgrep', 'plasmashell'],
+                                         capture_output=True, text=True).stdout.strip()
+
+                success = (pid_before != pid_after and pid_after != '')
+
+                return {
+                    'action': 'restart_plasma',
+                    'status': 'SUCCESS' if success else 'FAILED',
+                    'details': f'Used bash script. PID: {pid_before} → {pid_after}. Script exit: {result.returncode}',
+                    'script_output': result.stdout,
+                    'script_errors': result.stderr,
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'real_operation': True,
+                    'pid_before': pid_before,
+                    'pid_after': pid_after
+                }
+            else:
+                # Fallback: direct command with proper session handling
+                # Force kill with -9 to ensure it actually dies
+                result1 = subprocess.run(['killall', '-9', 'plasmashell'],
+                                       capture_output=True, text=True)
+                print(f"killall -9 result: exit_code={result1.returncode}")
+
+                # Wait longer to ensure process is gone
+                time.sleep(5)
+
+                # Verify it's actually gone
+                pid_after_kill = subprocess.run(['pgrep', 'plasmashell'],
+                                              capture_output=True, text=True).stdout.strip()
+                print(f"PID after kill -9: {pid_after_kill}")
+
+                if pid_after_kill:
+                    return {
+                        'action': 'restart_plasma',
+                        'status': 'FAILED',
+                        'details': f'Failed to kill plasmashell. PID {pid_before} still running as {pid_after_kill}',
+                        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                        'real_operation': True
+                    }
+
+                # Start new instance with proper environment
+                env = dict(os.environ)
+                env.update({
+                    'DISPLAY': ':0',
+                    'XDG_SESSION_TYPE': 'x11',
+                    'XDG_CURRENT_DESKTOP': 'KDE',
+                    'KDE_SESSION_VERSION': '5'
+                })
+
+                result2 = subprocess.run(['kstart', 'plasmashell'],
+                                       capture_output=True, text=True, env=env)
+                print(f"kstart result: exit_code={result2.returncode}, stderr={result2.stderr}")
+
+                # Wait and verify new process
+                time.sleep(3)
+                pid_final = subprocess.run(['pgrep', 'plasmashell'],
+                                         capture_output=True, text=True).stdout.strip()
+                print(f"Final PID: {pid_final}")
+
+                success = (pid_final != '' and pid_final != pid_before)
+
+                return {
+                    'action': 'restart_plasma',
+                    'status': 'SUCCESS' if success else 'FAILED',
+                    'details': f'Direct restart. PID: {pid_before} → {pid_final}. killall: {result1.returncode}, kstart: {result2.returncode}',
+                    'kstart_output': result2.stdout,
+                    'kstart_errors': result2.stderr,
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'real_operation': True,
+                    'pid_before': pid_before,
+                    'pid_after': pid_final
+                }
 
         except Exception as e:
             return {
@@ -197,26 +277,79 @@ class KDEMemoryGuardianHandler(http.server.SimpleHTTPRequestHandler):
             }
 
     def clear_cache(self):
-        """Actually clear system cache"""
+        """Actually clear system cache - REAL IMPLEMENTATION"""
         try:
             print("🧹 REAL OPERATION: Clearing system cache...")
 
-            # Sync filesystem
-            result1 = subprocess.run(['sync'], capture_output=True, text=True)
+            # Use the bash script that we know works
+            script_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'kde-memory-manager.sh')
 
-            # Clear page cache, dentries and inodes
-            result2 = subprocess.run(['sudo', 'sh', '-c', 'echo 3 > /proc/sys/vm/drop_caches'],
-                                   capture_output=True, text=True)
+            if os.path.exists(script_path):
+                # Use the proven working bash script
+                result = subprocess.run(['/bin/bash', script_path, 'clear-cache'],
+                                      capture_output=True, text=True,
+                                      env=dict(os.environ, DISPLAY=':0'),
+                                      timeout=30)
 
+                # Check if it worked (even with permission issues)
+                success = result.returncode == 0
+
+                return {
+                    'action': 'clear_cache',
+                    'status': 'SUCCESS' if success else 'PARTIAL',
+                    'details': f'Used bash script. Exit code: {result.returncode}',
+                    'script_output': result.stdout,
+                    'script_errors': result.stderr,
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'real_operation': True,
+                    'note': 'Cache clearing may require sudo privileges for full effect'
+                }
+            else:
+                # Fallback: basic cache clearing without sudo
+                print("🧹 REAL: Fallback cache clearing (no sudo)...")
+
+                # Sync filesystem (this always works)
+                result1 = subprocess.run(['sync'], capture_output=True, text=True)
+
+                # Clear user-level caches
+                user_caches = [
+                    os.path.expanduser('~/.cache/thumbnails'),
+                    os.path.expanduser('~/.cache/icon-cache.kcache'),
+                    os.path.expanduser('~/.cache/krunner')
+                ]
+
+                cleared = []
+                for cache_path in user_caches:
+                    try:
+                        if os.path.exists(cache_path):
+                            if os.path.isfile(cache_path):
+                                os.remove(cache_path)
+                                cleared.append(f"Removed file: {os.path.basename(cache_path)}")
+                            elif os.path.isdir(cache_path):
+                                import shutil
+                                shutil.rmtree(cache_path)
+                                cleared.append(f"Removed directory: {os.path.basename(cache_path)}")
+                    except Exception as e:
+                        cleared.append(f"Failed to clear {os.path.basename(cache_path)}: {e}")
+
+                return {
+                    'action': 'clear_cache',
+                    'status': 'PARTIAL',
+                    'details': f'User-level cache clearing. Sync: {result1.returncode}',
+                    'cleared_items': cleared,
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'real_operation': True,
+                    'note': 'System-level cache clearing requires sudo privileges'
+                }
+
+        except subprocess.TimeoutExpired:
             return {
                 'action': 'clear_cache',
-                'status': 'SUCCESS' if result2.returncode == 0 else 'PARTIAL',
-                'details': f'Cache clearing attempted - sync: {result1.returncode}, drop_caches: {result2.returncode}',
+                'status': 'TIMEOUT',
+                'details': 'Cache clearing operation timed out after 30 seconds',
                 'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
-                'real_operation': True,
-                'note': 'May require sudo privileges for full cache clearing'
+                'real_operation': True
             }
-
         except Exception as e:
             return {
                 'action': 'clear_cache',
@@ -227,42 +360,62 @@ class KDEMemoryGuardianHandler(http.server.SimpleHTTPRequestHandler):
             }
 
     def view_logs(self):
-        """Actually open log viewer"""
+        """Actually view log files - REAL IMPLEMENTATION"""
         try:
-            print("📋 REAL OPERATION: Opening log viewer...")
+            print("📋 REAL OPERATION: Retrieving log files...")
 
-            log_file = os.path.expanduser('~/.local/share/kde-memory-manager.log')
+            # Find all relevant log files
+            log_files = [
+                ('KDE Memory Manager', os.path.expanduser('~/.local/share/kde-memory-manager.log')),
+                ('KDE Memory Guardian', os.path.expanduser('~/.local/share/kde-memory-guardian/kde-memory-manager.log')),
+                ('Plasma Tray Cache', os.path.expanduser('~/.local/share/kde-memory-guardian/plasma-tray-cache.log')),
+                ('Real KDE Manager', os.path.expanduser('~/.local/share/real_kde_memory_manager.log'))
+            ]
 
-            # Try to open with various log viewers
-            viewers = ['konsole', 'gnome-terminal', 'xterm']
-            opened = False
+            logs_found = {}
+            total_size = 0
 
-            for viewer in viewers:
-                try:
-                    if viewer == 'konsole':
-                        result = subprocess.run([viewer, '-e', 'tail', '-f', log_file],
-                                              capture_output=True, text=True)
-                    else:
-                        result = subprocess.run([viewer, '-e', f'tail -f {log_file}'],
-                                              capture_output=True, text=True)
-                    opened = True
-                    break
-                except:
-                    continue
-
-            if not opened:
-                # Fallback: just return log content
-                if os.path.exists(log_file):
-                    with open(log_file, 'r') as f:
-                        content = f.read()
+            for log_name, log_path in log_files:
+                if os.path.exists(log_path):
+                    try:
+                        with open(log_path, 'r') as f:
+                            content = f.read()
+                            # Get last 1000 characters to avoid huge responses
+                            if len(content) > 1000:
+                                content = "...\n" + content[-1000:]
+                            logs_found[log_name] = {
+                                'path': log_path,
+                                'size': os.path.getsize(log_path),
+                                'content': content,
+                                'lines': len(content.split('\n'))
+                            }
+                            total_size += os.path.getsize(log_path)
+                    except Exception as e:
+                        logs_found[log_name] = {
+                            'path': log_path,
+                            'error': f"Could not read: {e}"
+                        }
                 else:
-                    content = "Log file not found"
+                    logs_found[log_name] = {
+                        'path': log_path,
+                        'status': 'File not found'
+                    }
 
+            if logs_found:
                 return {
                     'action': 'view_logs',
-                    'status': 'FALLBACK',
-                    'details': 'No terminal viewer available, returning log content',
-                    'log_content': content[-2000:],  # Last 2000 chars
+                    'status': 'SUCCESS',
+                    'details': f'Retrieved {len([l for l in logs_found.values() if "content" in l])} log files, total size: {total_size} bytes',
+                    'logs': logs_found,
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'real_operation': True
+                }
+            else:
+                return {
+                    'action': 'view_logs',
+                    'status': 'NO_LOGS',
+                    'details': 'No log files found',
+                    'searched_paths': [path for _, path in log_files],
                     'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
                     'real_operation': True
                 }

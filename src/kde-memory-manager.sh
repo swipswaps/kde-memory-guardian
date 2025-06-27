@@ -516,6 +516,36 @@ trap cleanup SIGTERM SIGINT
 # =============================================================================
 
 main() {
+    # Handle command line arguments for direct operations
+    case "${1:-}" in
+        "restart-plasma")
+            log_message "Manual Plasma restart requested via command line" "INFO"
+            restart_plasmashell
+            exit $?
+            ;;
+        "clear-cache")
+            log_message "Manual cache clearing requested via command line" "INFO"
+            clear_system_caches
+            exit $?
+            ;;
+        "check")
+            log_message "Manual memory check requested via command line" "INFO"
+            check_and_manage_memory
+            exit $?
+            ;;
+        "")
+            # No arguments - run normal service mode
+            ;;
+        *)
+            echo "Usage: $0 [restart-plasma|clear-cache|check]"
+            echo "  restart-plasma: Restart plasmashell immediately"
+            echo "  clear-cache: Clear system caches immediately"
+            echo "  check: Run memory check once and exit"
+            echo "  (no args): Run as continuous monitoring service"
+            exit 1
+            ;;
+    esac
+
     # Log startup information for debugging and monitoring
     log_message "KDE Memory Guardian started (PID: $$)" "START"
     log_message "Configuration: Memory threshold: ${MEMORY_THRESHOLD}%, Plasma threshold: ${PLASMA_MEMORY_THRESHOLD}KB, KGlobal threshold: ${KGLOBAL_MEMORY_THRESHOLD}KB" "INFO"
