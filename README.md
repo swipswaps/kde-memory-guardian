@@ -272,6 +272,22 @@ KDE Memory Guardian now includes a comprehensive three-tier memory protection sy
 - **Screenshots:** Multiple PNG files captured during automation
 - **Test Results:** JSON files with detailed results
 
+## 🚨 **AUGMENT CUSTOM INSTRUCTIONS**
+
+**Premium Service Quality Assurance:** This repository includes custom Augment instructions to ensure all code performs real system operations rather than simulations.
+
+### 📋 **Custom Instructions File**
+- **Location:** [augment_custom_instructions.md](augment_custom_instructions.md)
+- **Purpose:** Prevent placeholder/simulation code in favor of real functionality
+- **Settings:** [evidence/augment_settings.json](evidence/augment_settings.json)
+
+### ✅ **Quality Standards Enforced**
+- All system operations must execute real commands
+- No JavaScript setTimeout() simulations
+- Verifiable system changes required
+- Real error handling and permission management
+- Professional-grade tools for premium service
+
 **Testing Status:** ✅ **Phase 1 Complete** - Local testing verified on Fedora **+ REAL USER INTERACTION VERIFIED**
 **Installation Status:** ✅ **SUCCESSFULLY INSTALLED** - Multi-tier protection active
 **Dashboard Status:** ✅ **REAL-TIME MONITORING ACTIVE** - Live dashboard with WebSocket integration
