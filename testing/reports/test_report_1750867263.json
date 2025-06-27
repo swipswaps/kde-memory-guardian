@@ -1,0 +1,122 @@
+{
+  "timestamp": "2025-06-25T12:00:32.560550",
+  "interfaces": {
+    "database_server": {
+      "url": "http://localhost:5000/",
+      "title": "KDE Memory Guardian - Enhanced Database Manager",
+      "screenshot": "/home/owner/Documents/6854a1da-e23c-8008-a9fc-76b7fa3c1f92/kde-memory-guardian/testing/screenshots/database_server_1750867238.png",
+      "content_length": 20000,
+      "elements_found": 2,
+      "elements_total": 4,
+      "element_details": {
+        "h1:has-text(\"KDE Memory Guardian\")": {
+          "found": false,
+          "visible": false
+        },
+        "text=\"Total Entries\"": {
+          "found": true,
+          "visible": true
+        },
+        "text=\"Database Size\"": {
+          "found": true,
+          "visible": true
+        },
+        "button:has-text(\"SQLite Browser\")": {
+          "found": false,
+          "visible": false
+        }
+      },
+      "js_errors": [],
+      "success": true,
+      "interactions": [
+        "sql_query_filled",
+        "execute_query_clicked"
+      ]
+    },
+    "enhanced_hub": {
+      "url": "http://localhost:3001/",
+      "title": "Enhanced Data Integration & Visualization Hub",
+      "screenshot": "/home/owner/Documents/6854a1da-e23c-8008-a9fc-76b7fa3c1f92/kde-memory-guardian/testing/screenshots/enhanced_hub_1750867248.png",
+      "content_length": 52892,
+      "elements_found": 3,
+      "elements_total": 4,
+      "element_details": {
+        "text=\"Enhanced Data Integration\"": {
+          "found": false,
+          "visible": false
+        },
+        "text=\"Interactive Visualizations\"": {
+          "found": true,
+          "visible": true
+        },
+        "text=\"Data Sources\"": {
+          "found": true,
+          "visible": true
+        },
+        ".visualization-container": {
+          "found": true,
+          "visible": true
+        }
+      },
+      "js_errors": [],
+      "success": true,
+      "interactions": []
+    },
+    "react_app": {
+      "url": "http://localhost:3000/",
+      "title": "Clipboard Data Visualizer",
+      "screenshot": "/home/owner/Documents/6854a1da-e23c-8008-a9fc-76b7fa3c1f92/kde-memory-guardian/testing/screenshots/react_app_1750867256.png",
+      "content_length": 315645,
+      "elements_found": 1,
+      "elements_total": 4,
+      "element_details": {
+        "text=\"Clipboard Intelligence\"": {
+          "found": false,
+          "visible": false
+        },
+        "text=\"Intelligence Dashboard\"": {
+          "found": false,
+          "visible": false
+        },
+        "text=\"Chart Type Selector\"": {
+          "found": false,
+          "visible": false
+        },
+        "text=\"Data Table\"": {
+          "found": true,
+          "visible": true
+        }
+      },
+      "js_errors": [],
+      "success": true,
+      "interactions": []
+    }
+  },
+  "summary": {
+    "total_interfaces": 3,
+    "successful_interfaces": 3,
+    "interface_success_rate": 100.0,
+    "total_api_tests": 3,
+    "successful_api_tests": 3,
+    "api_success_rate": 100.0,
+    "overall_success": true
+  },
+  "api_tests": {
+    "database_stats": {
+      "status": 200,
+      "success": true,
+      "data_size": 91
+    },
+    "enhanced_stats": {
+      "status": 200,
+      "success": true,
+      "data_size": 131
+    },
+    "clipboard_history": {
+      "status": 200,
+      "success": true,
+      "data_size": 8359393,
+      "entry_count": 440
+    }
+  }
+}

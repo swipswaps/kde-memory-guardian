@@ -1,0 +1,75 @@
+{
+  "crash_summary": {
+    "total_crashes": 3,
+    "unique_signals": 2,
+    "affected_processes": 3,
+    "time_span": "2.9 hours",
+    "crash_frequency": "High (1.0/hour)"
+  },
+  "signal_analysis": {
+    "4": {
+      "signal_name": "SIGILL",
+      "description": "Illegal instruction",
+      "count": 2,
+      "severity": "CRITICAL",
+      "common_causes": [
+        "Corrupted binary or shared library",
+        "CPU architecture mismatch",
+        "Memory corruption affecting code segment",
+        "JIT compilation errors",
+        "Hardware CPU errors"
+      ],
+      "affected_pids": [
+        6121,
+        12241
+      ]
+    },
+    "11": {
+      "signal_name": "SIGSEGV",
+      "description": "Segmentation violation",
+      "count": 1,
+      "severity": "CRITICAL",
+      "common_causes": [
+        "Null pointer dereference",
+        "Buffer overflow/underflow",
+        "Use after free",
+        "Stack overflow",
+        "Memory corruption"
+      ],
+      "affected_pids": [
+        11958
+      ]
+    }
+  },
+  "timeline_analysis": {
+    "crashes_by_hour": {
+      "19": 1,
+      "22": 2
+    },
+    "peak_crash_hours": [
+      22,
+      19
+    ],
+    "pattern": "Clustered"
+  },
+  "pattern_analysis": {},
+  "severity_assessment": {
+    "overall_severity": "CRITICAL",
+    "severity_score": 22,
+    "contributing_factors": [
+      "Critical signal: SIGILL",
+      "Critical signal: SIGSEGV",
+      "Multiple crashes: 3 crashes"
+    ]
+  },
+  "recommendations": [
+    "\ud83d\udcbe Increase system memory or add swap space",
+    "\ud83e\uddf9 Clear VSCode extension cache and disable problematic extensions",
+    "\ud83d\udcc1 Check for corrupted workspace files",
+    "\ud83d\udd27 Reinstall VSCode Insiders to fix potential binary corruption",
+    "\ud83d\udd27 Update graphics drivers and disable GPU acceleration",
+    "\ud83d\udeab Disable hardware acceleration in VSCode settings",
+    "\ud83d\udcbe Verify system memory integrity with memtest86",
+    "\ud83d\udd0d Check for CPU architecture compatibility issues"
+  ]
+}

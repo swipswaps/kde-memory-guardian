@@ -1,0 +1,272 @@
+#!/bin/bash
+################################################################################
+# clipboard-sql - Enhanced SQLite CLI for clipboard management
+# WHO: Power users who prefer command-line database interaction
+# WHAT: Advanced SQL interface for clipboard database with custom queries
+# WHY: Superior to ncurses - leverages SQL power with perfect text selection
+# HOW: Custom SQL queries with formatted output and terminal text selection
+################################################################################
+
+DB="$HOME/.clipboard_manager.db"
+
+# Check if database exists
+if [ ! -f "$DB" ]; then
+    echo "❌ Clipboard database not found at $DB"
+    exit 1
+fi
+
+case "${1:-list}" in
+    "list"|"l")
+        echo "📋 CLIPBOARD ENTRIES:"
+        echo "===================="
+        sqlite3 "$DB" -header -column "
+        SELECT 
+            id,
+            content_type as type,
+            CASE 
+                WHEN length(content) > 50 THEN substr(content, 1, 47) || '...'
+                ELSE content
+            END as preview,
+            datetime(timestamp, 'localtime') as created
+        FROM clipboard_entries 
+        ORDER BY timestamp DESC 
+        LIMIT 20;"
+        echo ""
+        echo "💡 Use: clipboard-sql show <id> to view full content"
+        ;;
+    
+    "search"|"s")
+        if [ -z "$2" ]; then
+            echo "Usage: clipboard-sql search <term>"
+            exit 1
+        fi
+        echo "🔍 SEARCH RESULTS for '$2':"
+        echo "=========================="
+        sqlite3 "$DB" -header -column "
+        SELECT 
+            id,
+            content_type,
+            CASE 
+                WHEN length(content) > 60 THEN substr(content, 1, 57) || '...'
+                ELSE content
+            END as preview
+        FROM clipboard_entries 
+        WHERE content LIKE '%$2%' 
+        ORDER BY timestamp DESC;"
+        ;;
+    
+    "show"|"view")
+        if [ -z "$2" ]; then
+            echo "Usage: clipboard-sql show <id>"
+            exit 1
+        fi
+        echo "📄 ENTRY #$2 - FULL CONTENT:"
+        echo "============================"
+        echo "💡 Select any text below with mouse + Ctrl+C"
+        echo "------------------------------------------------------------"
+        sqlite3 "$DB" "SELECT content FROM clipboard_entries WHERE id = $2;"
+        echo "------------------------------------------------------------"
+        echo "✅ Text selection enabled above ↑"
+        ;;
+    
+    "stats")
+        echo "📊 CLIPBOARD STATISTICS:"
+        echo "======================="
+        sqlite3 "$DB" -header -column "
+        SELECT 
+            content_type as 'Content Type',
+            COUNT(*) as 'Count',
+            printf('%.1f', AVG(size_bytes)) as 'Avg Size (bytes)',
+            MAX(size_bytes) as 'Max Size (bytes)',
+            printf('%.1f', AVG(word_count)) as 'Avg Words'
+        FROM clipboard_entries 
+        GROUP BY content_type 
+        ORDER BY COUNT(*) DESC;"
+        
+        echo ""
+        echo "📈 RECENT ACTIVITY:"
+        echo "=================="
+        sqlite3 "$DB" -header -column "
+        SELECT 
+            date(timestamp) as 'Date',
+            COUNT(*) as 'Entries Added'
+        FROM clipboard_entries 
+        WHERE timestamp >= datetime('now', '-7 days')
+        GROUP BY date(timestamp)
+        ORDER BY date(timestamp) DESC;"
+        ;;
+    
+    "types"|"t")
+        echo "📂 CONTENT TYPES:"
+        echo "================"
+        sqlite3 "$DB" -header -column "
+        SELECT 
+            content_type,
+            COUNT(*) as count,
+            GROUP_CONCAT(id, ', ') as entry_ids
+        FROM clipboard_entries 
+        GROUP BY content_type 
+        ORDER BY COUNT(*) DESC;"
+        ;;
+    
+    "recent"|"r")
+        LIMIT=${2:-10}
+        echo "🕒 RECENT $LIMIT ENTRIES:"
+        echo "======================"
+        sqlite3 "$DB" -header -column "
+        SELECT 
+            id,
+            content_type,
+            CASE 
+                WHEN length(content) > 40 THEN substr(content, 1, 37) || '...'
+                ELSE content
+            END as preview,
+            datetime(timestamp, 'localtime') as created
+        FROM clipboard_entries 
+        ORDER BY timestamp DESC 
+        LIMIT $LIMIT;"
+        ;;
+    
+    "favorites"|"fav"|"f")
+        echo "⭐ FAVORITE ENTRIES:"
+        echo "=================="
+        sqlite3 "$DB" -header -column "
+        SELECT 
+            id,
+            content_type,
+            CASE 
+                WHEN length(content) > 50 THEN substr(content, 1, 47) || '...'
+                ELSE content
+            END as preview,
+            datetime(timestamp, 'localtime') as created
+        FROM clipboard_entries 
+        WHERE is_favorite = 1
+        ORDER BY timestamp DESC;"
+        ;;
+    
+    "sql")
+        if [ -z "$2" ]; then
+            echo "Usage: clipboard-sql sql \"<SQL_QUERY>\""
+            echo "Example: clipboard-sql sql \"SELECT * FROM clipboard_entries WHERE content_type = 'url';\""
+            exit 1
+        fi
+        echo "🗃️ CUSTOM SQL QUERY:"
+        echo "==================="
+        sqlite3 "$DB" -header -column "$2"
+        ;;
+    
+    "export"|"e")
+        FORMAT=${2:-csv}
+        OUTPUT="clipboard_export_$(date +%Y%m%d_%H%M%S).$FORMAT"
+
+        case "$FORMAT" in
+            "csv")
+                sqlite3 "$DB" -header -csv "SELECT * FROM clipboard_entries ORDER BY timestamp DESC;" > "$OUTPUT"
+                ;;
+            "json")
+                sqlite3 "$DB" "SELECT json_group_array(json_object(
+                    'id', id,
+                    'content', content,
+                    'timestamp', timestamp,
+                    'content_type', content_type,
+                    'size_bytes', size_bytes,
+                    'is_favorite', is_favorite
+                )) FROM clipboard_entries ORDER BY timestamp DESC;" > "$OUTPUT"
+                ;;
+            *)
+                echo "❌ Unsupported format: $FORMAT"
+                echo "Supported formats: csv, json"
+                exit 1
+                ;;
+        esac
+
+        echo "✅ Exported to: $OUTPUT"
+        echo "📊 File size: $(du -h "$OUTPUT" | cut -f1)"
+        ;;
+
+    "plot"|"plots"|"p")
+        PLOT_TYPE=${2:-dashboard}
+        echo "📊 Generating clipboard plots..."
+
+        if command -v clipboard-plot >/dev/null 2>&1; then
+            case "$PLOT_TYPE" in
+                "types"|"t")
+                    clipboard-plot types --save
+                    ;;
+                "timeline"|"time")
+                    clipboard-plot timeline --save
+                    ;;
+                "sizes"|"size"|"s")
+                    clipboard-plot sizes --save
+                    ;;
+                "favorites"|"fav"|"f")
+                    clipboard-plot favorites --save
+                    ;;
+                "dashboard"|"dash"|"d")
+                    clipboard-plot dashboard --save
+                    ;;
+                "all"|"a")
+                    clipboard-plot all --save
+                    ;;
+                *)
+                    echo "📊 Available plot types:"
+                    echo "  types, t        # Content types distribution"
+                    echo "  timeline, time  # Activity timeline"
+                    echo "  sizes, size, s  # Size analysis"
+                    echo "  favorites, fav  # Favorites analysis"
+                    echo "  dashboard, d    # Comprehensive dashboard"
+                    echo "  all, a          # Generate all plots"
+                    ;;
+            esac
+        else
+            echo "❌ clipboard-plot tool not found"
+            echo "💡 Install with: pip install matplotlib seaborn --user"
+        fi
+        ;;
+    
+    "help"|"h")
+        echo "📋 Clipboard SQL Tool - Enhanced Database Interface"
+        echo "=================================================="
+        echo ""
+        echo "🎯 BASIC COMMANDS:"
+        echo "  list, l              # List recent entries (default)"
+        echo "  search <term>, s     # Search for content"
+        echo "  show <id>            # Show full entry with text selection"
+        echo "  recent [limit], r    # Show recent entries (default: 10)"
+        echo ""
+        echo "📊 ANALYSIS COMMANDS:"
+        echo "  stats                # Show database statistics"
+        echo "  types, t             # Show content types breakdown"
+        echo "  favorites, fav, f    # Show favorite entries"
+        echo ""
+        echo "🔧 ADVANCED COMMANDS:"
+        echo "  sql \"<query>\"        # Execute custom SQL query"
+        echo "  export [csv|json]    # Export database to file"
+        echo "  plot [type]          # Generate data visualization plots"
+        echo ""
+        echo "💡 EXAMPLES:"
+        echo "  clipboard-sql search python"
+        echo "  clipboard-sql show 5"
+        echo "  clipboard-sql sql \"SELECT * FROM clipboard_entries WHERE content_type = 'url';\""
+        echo "  clipboard-sql export json"
+        echo "  clipboard-sql plot dashboard"
+        echo "  clipboard-sql plot types"
+        echo ""
+        echo "✅ ADVANTAGES OVER NCURSES:"
+        echo "  • Perfect text selection (mouse + Ctrl+C)"
+        echo "  • SQL power for complex queries"
+        echo "  • Fast terminal-based interface"
+        echo "  • Export capabilities"
+        echo "  • No screen management issues"
+        ;;
+    
+    *)
+        echo "❌ Unknown command: $1"
+        echo "💡 Use 'clipboard-sql help' for usage information"
+        echo ""
+        echo "🚀 Quick commands:"
+        echo "  clipboard-sql list     # List entries"
+        echo "  clipboard-sql show 5   # View entry #5"
+        echo "  clipboard-sql help     # Full help"
+        ;;
+esac

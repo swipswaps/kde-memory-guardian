@@ -23,7 +23,17 @@ import {
   Badge,
   Skeleton,
   ToggleButton,
-  ToggleButtonGroup
+  ToggleButtonGroup,
+  Button,
+  ButtonGroup,
+  Slider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
 import { 
   green, red, orange, blue, grey 
@@ -41,6 +51,9 @@ import {
   Remove,
   PlayArrow,
   Stop,
+  Pause,
+  Settings,
+  ExpandMore,
   SignalWifiStatusbar4Bar,
   SignalWifiOff,
   Timeline,
@@ -57,46 +70,124 @@ const ImprovedMemoryDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [timelineData, setTimelineData] = useState([]);
   const [timeRange, setTimeRange] = useState('5m'); // 5m, 15m, 1h, 6h
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(2000); // 2 seconds
   const socketRef = useRef(null);
   const chartRef = useRef(null);
   const timelineRef = useRef(null);
 
-  // Initialize WebSocket connection
+  // Initialize WebSocket connection with robust error handling
   useEffect(() => {
-    const socket = io('http://localhost:3002');
-    socketRef.current = socket;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 2000;
 
-    socket.on('connect', () => {
-      setIsConnected(true);
-      setError(null);
-      setLoading(false);
-    });
+    const connectSocket = () => {
+      const socket = io('http://localhost:3002', {
+        transports: ['websocket', 'polling'],
+        timeout: 5000,
+        reconnection: true,
+        reconnectionAttempts: maxReconnectAttempts,
+        reconnectionDelay: reconnectDelay
+      });
 
-    socket.on('disconnect', () => {
-      setIsConnected(false);
-      setLoading(false);
-    });
+      socketRef.current = socket;
 
-    socket.on('memory_update', (data) => {
-      setMemoryData(data);
-      updateChart(data);
-      updateTimelineData(data);
-    });
+      socket.on('connect', () => {
+        console.log('Memory monitoring connected');
+        setIsConnected(true);
+        setError(null);
+        setLoading(false);
+        reconnectAttempts = 0;
 
-    socket.on('connect_error', (err) => {
-      setError('Unable to connect to memory monitoring service');
-      setLoading(false);
-    });
+        // Start monitoring immediately on connection
+        socket.emit('start_monitoring');
+        setIsMonitoring(true);
+      });
+
+      socket.on('disconnect', (reason) => {
+        console.log('Memory monitoring disconnected:', reason);
+        setIsConnected(false);
+        setIsMonitoring(false);
+
+        if (reason === 'io server disconnect') {
+          // Server initiated disconnect, try to reconnect
+          setTimeout(() => {
+            if (reconnectAttempts < maxReconnectAttempts) {
+              reconnectAttempts++;
+              connectSocket();
+            }
+          }, reconnectDelay);
+        }
+      });
+
+      socket.on('memory_update', (data) => {
+        if (data && data.memory) {
+          setMemoryData(data);
+          updateChart(data);
+          updateTimelineData(data);
+          setError(null); // Clear any previous errors
+        }
+      });
+
+      socket.on('connect_error', (err) => {
+        console.error('Memory monitoring connection error:', err);
+        setError(`Connection failed: ${err.message || 'Unable to connect to memory monitoring service'}`);
+        setLoading(false);
+        setIsConnected(false);
+      });
+
+      socket.on('reconnect_failed', () => {
+        setError('Failed to reconnect to memory monitoring service after multiple attempts');
+        setLoading(false);
+      });
+    };
+
+    connectSocket();
 
     return () => {
-      socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
   }, []);
 
-  // Update timeline chart when data changes
+  // Update timeline chart when data changes with debouncing
   useEffect(() => {
-    updateTimelineChart();
+    const timeoutId = setTimeout(() => {
+      updateTimelineChart();
+    }, 100); // Debounce updates to prevent excessive re-renders
+
+    return () => clearTimeout(timeoutId);
   }, [timelineData, timeRange]);
+
+  // Auto-refresh mechanism for fallback when WebSocket fails
+  useEffect(() => {
+    let intervalId;
+
+    if (autoRefresh && !isConnected) {
+      intervalId = setInterval(async () => {
+        try {
+          const response = await fetch('http://localhost:3002/api/memory');
+          if (response.ok) {
+            const data = await response.json();
+            setMemoryData(data);
+            updateChart(data);
+            updateTimelineData(data);
+            setError(null);
+          }
+        } catch (err) {
+          console.warn('Fallback fetch failed:', err);
+        }
+      }, refreshInterval);
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [autoRefresh, isConnected, refreshInterval]);
 
   // Toggle monitoring
   const toggleMonitoring = () => {
@@ -133,7 +224,25 @@ const ImprovedMemoryDashboard = () => {
       const filteredData = updatedData.filter(point => point.timestamp >= cutoffTime);
 
       // Limit to max points to prevent memory issues
-      return filteredData.slice(-maxPoints);
+      const finalData = filteredData.slice(-maxPoints);
+
+      // Ensure we have at least a few data points for meaningful visualization
+      if (finalData.length < 2) {
+        // Add some initial dummy data points to show the timeline properly
+        const dummyPoint = {
+          timestamp: new Date(now.getTime() - 30000), // 30 seconds ago
+          memory: newDataPoint.memory,
+          swap: newDataPoint.swap,
+          memoryUsed: newDataPoint.memoryUsed,
+          swapUsed: newDataPoint.swapUsed,
+          available: data.memory.memory.available,
+          cached: data.memory.memory.cached || 0,
+          buffers: data.memory.memory.buffers || 0
+        };
+        return [dummyPoint, newDataPoint];
+      }
+
+      return finalData;
     });
   };
 
@@ -591,6 +700,100 @@ const ImprovedMemoryDashboard = () => {
           />
         </Stack>
       </Box>
+
+      {/* Enhanced Control Panel */}
+      <Accordion sx={{ mb: 3 }}>
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Settings /> Advanced Controls
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Grid container spacing={3} alignItems="center">
+            {/* Monitoring Controls */}
+            <Grid item xs={12} md={4}>
+              <Typography variant="subtitle2" gutterBottom>
+                Monitoring Controls
+              </Typography>
+              <ButtonGroup variant="outlined" size="small" fullWidth>
+                <Button
+                  startIcon={isMonitoring ? <Pause /> : <PlayArrow />}
+                  onClick={toggleMonitoring}
+                  color={isMonitoring ? "warning" : "success"}
+                  disabled={!isConnected}
+                >
+                  {isMonitoring ? 'Pause' : 'Start'}
+                </Button>
+                <Button
+                  startIcon={<Stop />}
+                  onClick={() => {
+                    if (socketRef.current) {
+                      socketRef.current.emit('stop_monitoring');
+                      setIsMonitoring(false);
+                    }
+                  }}
+                  color="error"
+                  disabled={!isConnected}
+                >
+                  Stop
+                </Button>
+                <Button
+                  startIcon={<Refresh />}
+                  onClick={() => window.location.reload()}
+                >
+                  Reset
+                </Button>
+              </ButtonGroup>
+            </Grid>
+
+            {/* Refresh Interval */}
+            <Grid item xs={12} md={4}>
+              <Typography variant="subtitle2" gutterBottom>
+                Refresh Interval: {refreshInterval / 1000}s
+              </Typography>
+              <Slider
+                value={refreshInterval}
+                onChange={(e, newValue) => setRefreshInterval(newValue)}
+                min={1000}
+                max={10000}
+                step={1000}
+                marks={[
+                  { value: 1000, label: '1s' },
+                  { value: 5000, label: '5s' },
+                  { value: 10000, label: '10s' }
+                ]}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => `${value / 1000}s`}
+                size="small"
+              />
+            </Grid>
+
+            {/* Connection Status */}
+            <Grid item xs={12} md={4}>
+              <Typography variant="subtitle2" gutterBottom>
+                Connection Status
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {isConnected ? (
+                  <>
+                    <SignalWifiStatusbar4Bar color="success" />
+                    <Typography variant="body2" color="success.main">
+                      Connected (WebSocket)
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <SignalWifiOff color="error" />
+                    <Typography variant="body2" color="error.main">
+                      Disconnected
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            </Grid>
+          </Grid>
+        </AccordionDetails>
+      </Accordion>
 
       {/* Status Alert */}
       {memoryData && (

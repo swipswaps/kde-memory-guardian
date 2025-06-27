@@ -1,0 +1,314 @@
+#!/usr/bin/env python3
+"""
+Clipboard Database Plotting Tool
+WHO: Users who want visual analysis of clipboard usage patterns
+WHAT: Generate various plots and charts from clipboard database
+WHY: Visual insights into clipboard usage, content types, and trends
+HOW: matplotlib/seaborn plots with SQLite data analysis
+"""
+import sqlite3
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+from pathlib import Path
+import sys
+from datetime import datetime, timedelta
+import numpy as np
+
+class ClipboardPlotter:
+    def __init__(self):
+        self.db_path = Path.home() / '.clipboard_manager.db'
+        if not self.db_path.exists():
+            print(f"❌ Database not found: {self.db_path}")
+            sys.exit(1)
+        
+        # Set style
+        plt.style.use('seaborn-v0_8')
+        sns.set_palette("husl")
+    
+    def load_data(self):
+        """Load clipboard data into pandas DataFrame"""
+        conn = sqlite3.connect(str(self.db_path))
+        query = """
+        SELECT 
+            id, content, timestamp, content_type, size_bytes, 
+            is_favorite, word_count, char_count,
+            date(timestamp) as date,
+            datetime(timestamp, 'localtime') as local_time
+        FROM clipboard_entries
+        ORDER BY timestamp DESC
+        """
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        
+        # Convert timestamp to datetime
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        df['local_time'] = pd.to_datetime(df['local_time'])
+        df['date'] = pd.to_datetime(df['date'])
+        
+        return df
+    
+    def plot_content_types(self, save=False):
+        """Plot distribution of content types"""
+        df = self.load_data()
+        
+        plt.figure(figsize=(10, 6))
+        
+        # Count by content type
+        type_counts = df['content_type'].value_counts()
+        
+        # Create pie chart
+        plt.subplot(1, 2, 1)
+        plt.pie(type_counts.values, labels=type_counts.index, autopct='%1.1f%%')
+        plt.title('📊 Content Types Distribution')
+        
+        # Create bar chart
+        plt.subplot(1, 2, 2)
+        bars = plt.bar(type_counts.index, type_counts.values)
+        plt.title('📈 Content Types Count')
+        plt.xlabel('Content Type')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        
+        # Add value labels on bars
+        for bar in bars:
+            height = bar.get_height()
+            plt.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{int(height)}', ha='center', va='bottom')
+        
+        plt.tight_layout()
+        
+        if save:
+            plt.savefig('clipboard_content_types.png', dpi=300, bbox_inches='tight')
+            print("✅ Saved: clipboard_content_types.png")
+        else:
+            plt.show()
+    
+    def plot_activity_timeline(self, save=False):
+        """Plot clipboard activity over time"""
+        df = self.load_data()
+        
+        plt.figure(figsize=(12, 8))
+        
+        # Daily activity
+        daily_counts = df.groupby('date').size()
+        
+        plt.subplot(2, 1, 1)
+        plt.plot(daily_counts.index, daily_counts.values, marker='o')
+        plt.title('📅 Daily Clipboard Activity')
+        plt.xlabel('Date')
+        plt.ylabel('Entries Added')
+        plt.xticks(rotation=45)
+        plt.grid(True, alpha=0.3)
+        
+        # Hourly activity (if we have enough data)
+        if len(df) > 5:
+            df['hour'] = df['local_time'].dt.hour
+            hourly_counts = df.groupby('hour').size()
+            
+            plt.subplot(2, 1, 2)
+            plt.bar(hourly_counts.index, hourly_counts.values)
+            plt.title('🕐 Hourly Activity Pattern')
+            plt.xlabel('Hour of Day')
+            plt.ylabel('Entries Added')
+            plt.xticks(range(0, 24, 2))
+            plt.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        
+        if save:
+            plt.savefig('clipboard_activity_timeline.png', dpi=300, bbox_inches='tight')
+            print("✅ Saved: clipboard_activity_timeline.png")
+        else:
+            plt.show()
+    
+    def plot_size_analysis(self, save=False):
+        """Plot content size analysis"""
+        df = self.load_data()
+        
+        plt.figure(figsize=(12, 8))
+        
+        # Size distribution by content type
+        plt.subplot(2, 2, 1)
+        for content_type in df['content_type'].unique():
+            type_data = df[df['content_type'] == content_type]
+            plt.hist(type_data['size_bytes'], alpha=0.7, label=content_type, bins=10)
+        plt.title('📏 Size Distribution by Type')
+        plt.xlabel('Size (bytes)')
+        plt.ylabel('Count')
+        plt.legend()
+        
+        # Box plot of sizes by type
+        plt.subplot(2, 2, 2)
+        df.boxplot(column='size_bytes', by='content_type', ax=plt.gca())
+        plt.title('📦 Size Distribution (Box Plot)')
+        plt.suptitle('')  # Remove default title
+        
+        # Word count analysis
+        plt.subplot(2, 2, 3)
+        plt.scatter(df['char_count'], df['word_count'], 
+                   c=pd.Categorical(df['content_type']).codes, alpha=0.7)
+        plt.title('📝 Characters vs Words')
+        plt.xlabel('Character Count')
+        plt.ylabel('Word Count')
+        
+        # Size over time
+        plt.subplot(2, 2, 4)
+        plt.plot(df['timestamp'], df['size_bytes'], marker='o', alpha=0.7)
+        plt.title('📈 Content Size Over Time')
+        plt.xlabel('Time')
+        plt.ylabel('Size (bytes)')
+        plt.xticks(rotation=45)
+        
+        plt.tight_layout()
+        
+        if save:
+            plt.savefig('clipboard_size_analysis.png', dpi=300, bbox_inches='tight')
+            print("✅ Saved: clipboard_size_analysis.png")
+        else:
+            plt.show()
+    
+    def plot_favorites_analysis(self, save=False):
+        """Plot favorites analysis"""
+        df = self.load_data()
+        
+        if df['is_favorite'].sum() == 0:
+            print("📊 No favorite entries found to plot")
+            return
+        
+        plt.figure(figsize=(10, 6))
+        
+        # Favorites vs non-favorites
+        fav_counts = df['is_favorite'].value_counts()
+        labels = ['Regular', 'Favorites']
+        
+        plt.subplot(1, 2, 1)
+        plt.pie(fav_counts.values, labels=labels, autopct='%1.1f%%')
+        plt.title('⭐ Favorites Distribution')
+        
+        # Favorites by content type
+        plt.subplot(1, 2, 2)
+        fav_by_type = df[df['is_favorite'] == 1]['content_type'].value_counts()
+        if len(fav_by_type) > 0:
+            plt.bar(fav_by_type.index, fav_by_type.values)
+            plt.title('⭐ Favorites by Content Type')
+            plt.xlabel('Content Type')
+            plt.ylabel('Count')
+            plt.xticks(rotation=45)
+        
+        plt.tight_layout()
+        
+        if save:
+            plt.savefig('clipboard_favorites_analysis.png', dpi=300, bbox_inches='tight')
+            print("✅ Saved: clipboard_favorites_analysis.png")
+        else:
+            plt.show()
+    
+    def plot_dashboard(self, save=False):
+        """Create comprehensive dashboard"""
+        df = self.load_data()
+        
+        fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+        fig.suptitle('📊 Clipboard Database Dashboard', fontsize=16)
+        
+        # Content types pie chart
+        type_counts = df['content_type'].value_counts()
+        axes[0, 0].pie(type_counts.values, labels=type_counts.index, autopct='%1.1f%%')
+        axes[0, 0].set_title('Content Types')
+        
+        # Daily activity
+        daily_counts = df.groupby('date').size()
+        axes[0, 1].plot(daily_counts.index, daily_counts.values, marker='o')
+        axes[0, 1].set_title('Daily Activity')
+        axes[0, 1].tick_params(axis='x', rotation=45)
+        
+        # Size distribution
+        axes[0, 2].hist(df['size_bytes'], bins=15, alpha=0.7)
+        axes[0, 2].set_title('Size Distribution')
+        axes[0, 2].set_xlabel('Size (bytes)')
+        
+        # Content type bars
+        axes[1, 0].bar(type_counts.index, type_counts.values)
+        axes[1, 0].set_title('Content Type Counts')
+        axes[1, 0].tick_params(axis='x', rotation=45)
+        
+        # Size by type
+        df.boxplot(column='size_bytes', by='content_type', ax=axes[1, 1])
+        axes[1, 1].set_title('Size by Type')
+        
+        # Recent activity (last 7 days)
+        recent_df = df[df['timestamp'] >= (datetime.now() - timedelta(days=7))]
+        if len(recent_df) > 0:
+            recent_daily = recent_df.groupby('date').size()
+            axes[1, 2].bar(recent_daily.index, recent_daily.values)
+            axes[1, 2].set_title('Recent Activity (7 days)')
+            axes[1, 2].tick_params(axis='x', rotation=45)
+        else:
+            axes[1, 2].text(0.5, 0.5, 'No recent data', ha='center', va='center')
+            axes[1, 2].set_title('Recent Activity (7 days)')
+        
+        plt.tight_layout()
+        
+        if save:
+            plt.savefig('clipboard_dashboard.png', dpi=300, bbox_inches='tight')
+            print("✅ Saved: clipboard_dashboard.png")
+        else:
+            plt.show()
+
+def main():
+    """Main function"""
+    plotter = ClipboardPlotter()
+    
+    if len(sys.argv) < 2:
+        print("📊 Clipboard Database Plotting Tool")
+        print("===================================")
+        print("")
+        print("Usage:")
+        print("  clipboard-plot types      # Content types distribution")
+        print("  clipboard-plot timeline   # Activity timeline")
+        print("  clipboard-plot sizes      # Size analysis")
+        print("  clipboard-plot favorites  # Favorites analysis")
+        print("  clipboard-plot dashboard  # Comprehensive dashboard")
+        print("  clipboard-plot all        # Generate all plots")
+        print("")
+        print("Options:")
+        print("  --save                    # Save plots as PNG files")
+        print("")
+        print("Examples:")
+        print("  clipboard-plot dashboard")
+        print("  clipboard-plot types --save")
+        print("  clipboard-plot all --save")
+        return
+    
+    plot_type = sys.argv[1].lower()
+    save_plots = '--save' in sys.argv
+    
+    try:
+        if plot_type == 'types':
+            plotter.plot_content_types(save=save_plots)
+        elif plot_type == 'timeline':
+            plotter.plot_activity_timeline(save=save_plots)
+        elif plot_type == 'sizes':
+            plotter.plot_size_analysis(save=save_plots)
+        elif plot_type == 'favorites':
+            plotter.plot_favorites_analysis(save=save_plots)
+        elif plot_type == 'dashboard':
+            plotter.plot_dashboard(save=save_plots)
+        elif plot_type == 'all':
+            print("📊 Generating all plots...")
+            plotter.plot_content_types(save=save_plots)
+            plotter.plot_activity_timeline(save=save_plots)
+            plotter.plot_size_analysis(save=save_plots)
+            plotter.plot_favorites_analysis(save=save_plots)
+            plotter.plot_dashboard(save=save_plots)
+            print("✅ All plots generated!")
+        else:
+            print(f"❌ Unknown plot type: {plot_type}")
+            print("Use 'clipboard-plot' without arguments for help")
+    
+    except Exception as e:
+        print(f"❌ Error generating plot: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

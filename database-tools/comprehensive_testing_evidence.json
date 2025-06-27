@@ -1,0 +1,130 @@
+{
+  "selenium_tests": [
+    {
+      "interface": "professional_interface",
+      "url": "http://localhost:9002",
+      "title": "\ud83d\udd0d Professional Log Analysis Interface",
+      "content_length": 686,
+      "buttons_found": 9,
+      "inputs_found": 2,
+      "tables_found": 0,
+      "text_selectable": false,
+      "button_functionality": 3,
+      "status": "PASS"
+    },
+    {
+      "interface": "enhanced_analyzer",
+      "url": "http://localhost:9001",
+      "title": "\ud83e\udde0 Intelligent Error Analysis with Evidence",
+      "content_length": 810,
+      "buttons_found": 2,
+      "inputs_found": 0,
+      "tables_found": 0,
+      "text_selectable": false,
+      "button_functionality": 2,
+      "status": "PASS"
+    },
+    {
+      "interface": "crash_correlator",
+      "url": "http://localhost:9000",
+      "title": "\ud83d\udca5 Crash Analysis Correlator",
+      "content_length": 345,
+      "buttons_found": 4,
+      "inputs_found": 1,
+      "tables_found": 0,
+      "text_selectable": false,
+      "button_functionality": 3,
+      "status": "PASS"
+    }
+  ],
+  "playwright_tests": [
+    {
+      "interface": "professional_interface",
+      "url": "http://localhost:9002",
+      "title": "\ud83d\udd0d Professional Log Analysis Interface",
+      "content_length": 19494,
+      "buttons_count": 9,
+      "inputs_count": 2,
+      "tables_count": 0,
+      "accessibility_score": 2,
+      "performance_metrics": {
+        "load_time": 0.55,
+        "status": "GOOD"
+      },
+      "responsive": true,
+      "status": "PASS"
+    },
+    {
+      "interface": "enhanced_analyzer",
+      "url": "http://localhost:9001",
+      "title": "\ud83e\udde0 Intelligent Error Analysis with Evidence",
+      "content_length": 24415,
+      "buttons_count": 2,
+      "inputs_count": 0,
+      "tables_count": 0,
+      "accessibility_score": 6,
+      "performance_metrics": {
+        "load_time": 0.55,
+        "status": "GOOD"
+      },
+      "responsive": true,
+      "status": "PASS"
+    },
+    {
+      "interface": "crash_correlator",
+      "url": "http://localhost:9000",
+      "title": "\ud83d\udca5 Crash Analysis Correlator",
+      "content_length": 37404,
+      "buttons_count": 4,
+      "inputs_count": 1,
+      "tables_count": 0,
+      "accessibility_score": 7,
+      "performance_metrics": {
+        "load_time": 0.54,
+        "status": "GOOD"
+      },
+      "responsive": true,
+      "status": "PASS"
+    }
+  ],
+  "dogtail_tests": [
+    {
+      "desktop_accessible": true,
+      "applications_found": 0,
+      "browser_apps": 0,
+      "accessibility_tree": true,
+      "status": "PASS"
+    }
+  ],
+  "interface_verification": {
+    "http://localhost:9002/api/parsed-logs": {
+      "url": "http://localhost:9002/api/parsed-logs",
+      "status_code": 500,
+      "response_size": 76,
+      "content_type": "application/json",
+      "status": "FAIL"
+    },
+    "http://localhost:9001/api/database-stats": {
+      "url": "http://localhost:9001/api/database-stats",
+      "status_code": 200,
+      "response_size": 236,
+      "content_type": "application/json",
+      "status": "PASS"
+    },
+    "http://localhost:9001/api/verbatim-logs": {
+      "url": "http://localhost:9001/api/verbatim-logs",
+      "status_code": 200,
+      "response_size": 87496,
+      "content_type": "application/json",
+      "status": "PASS"
+    },
+    "http://localhost:9000/api/collect-sudo-logs": {
+      "url": "http://localhost:9000/api/collect-sudo-logs",
+      "status_code": 200,
+      "response_size": 197,
+      "content_type": "application/json",
+      "status": "PASS"
+    }
+  },
+  "functionality_evidence": {}
+}

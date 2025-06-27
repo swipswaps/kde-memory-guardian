@@ -1,0 +1,69 @@
+{
+  "timestamp": 1750953898.2516632,
+  "summary": {
+    "total": 6,
+    "passed": 3,
+    "failed": 3
+  },
+  "results": [
+    [
+      "Selenium Interface Loading",
+      {
+        "status": "PASS",
+        "title": "\ud83d\udca5 Crash Analysis Correlator",
+        "elements_found": {
+          "analyze_button": true,
+          "sudo_button": true,
+          "crash_input": true
+        }
+      }
+    ],
+    [
+      "Selenium Text Selection",
+      {
+        "status": "FAIL",
+        "selected_text": "",
+        "text_selectable": false
+      }
+    ],
+    [
+      "Selenium Sudo Workflow",
+      {
+        "status": "PASS",
+        "terminal_message": true,
+        "check_button": true
+      }
+    ],
+    [
+      "Selenium Crash Analysis",
+      {
+        "status": "PASS",
+        "analysis_complete": true,
+        "evidence_sections": [
+          "EVIDENCE",
+          "SYSTEM LOGS",
+          "ERROR LOGS",
+          "KERNEL MESSAGES",
+          "MEMORY PRESSURE"
+        ],
+        "sections_count": 5
+      }
+    ],
+    [
+      "Dogtail Accessibility",
+      {
+        "status": "FAIL",
+        "error": "[Errno 2] No such file or directory: 'at-spi-bus-launcher'"
+      }
+    ],
+    [
+      "Sudo Data Integration",
+      {
+        "status": "PARTIAL",
+        "sudo_files_found": 0,
+        "sudo_markers_in_analysis": 0,
+        "integration_working": false
+      }
+    ]
+  ]
+}

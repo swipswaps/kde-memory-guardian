@@ -1,0 +1,86 @@
+# KDE Memory Guardian - Python Dependencies
+# Core web framework
+flask>=2.3.0
+
+# Testing frameworks
+playwright>=1.40.0
+selenium>=4.15.0
+dogtail>=1.0.0
+
+# HTTP requests
+requests>=2.31.0
+
+# System monitoring
+psutil>=5.9.0
+
+# Path handling
+pathlib2>=2.3.0
+
+# Data processing
+pandas>=2.0.0
+
+# JSON handling
+jsonschema>=4.17.0
+
+# Date/time handling
+python-dateutil>=2.8.0
+
+# Configuration management
+python-dotenv>=1.0.0
+
+# Logging
+colorlog>=6.7.0
+
+# Database (sqlite3 is built into Python)
+
+# GUI automation (optional)
+pyautogui>=0.9.54
+
+# Process management
+subprocess32>=3.5.4; python_version < '3.0'
+
+# Environment detection
+distro>=1.8.0
+
+# File watching
+watchdog>=3.0.0
+
+# Memory profiling
+memory-profiler>=0.61.0
+
+# Network utilities
+netifaces>=0.11.0
+
+# System information
+py-cpuinfo>=9.0.0
+
+# Clipboard handling
+pyperclip>=1.8.2
+
+# Image processing (for screenshots)
+Pillow>=10.0.0
+
+# Terminal colors
+termcolor>=2.3.0
+
+# Progress bars
+tqdm>=4.65.0
+
+# Configuration parsing
+configparser>=5.3.0
+
+# Async support
+aiohttp>=3.8.0
+asyncio-mqtt>=0.13.0
+
+# Development dependencies
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+black>=23.7.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Documentation
+sphinx>=7.1.0
+sphinx-rtd-theme>=1.3.0

@@ -1,0 +1,73 @@
+{
+  "timestamp": "2025-06-25T12:36:20.183631",
+  "interfaces": {
+    "database_server": {
+      "url": "http://localhost:5000/",
+      "title": "KDE Memory Guardian - Enhanced Database Manager",
+      "screenshot": "/home/owner/Documents/6854a1da-e23c-8008-a9fc-76b7fa3c1f92/kde-memory-guardian/testing/screenshots/database_server_1750869385.png",
+      "content_length": 20000,
+      "elements_found": 2,
+      "elements_total": 4,
+      "element_details": {
+        "h1:has-text(\"KDE Memory Guardian\")": {
+          "found": false,
+          "visible": false
+        },
+        "text=\"Total Entries\"": {
+          "found": true,
+          "visible": true
+        },
+        "text=\"Database Size\"": {
+          "found": true,
+          "visible": true
+        },
+        "button:has-text(\"SQLite Browser\")": {
+          "found": false,
+          "visible": false
+        }
+      },
+      "js_errors": [],
+      "success": true,
+      "interactions": [
+        "sql_query_filled",
+        "execute_query_clicked"
+      ]
+    },
+    "enhanced_hub": {
+      "url": "http://localhost:3001",
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3001/\nCall log:\n  - navigating to \"http://localhost:3001/\", waiting until \"networkidle\"\n",
+      "success": false
+    },
+    "react_app": {
+      "url": "http://localhost:3000",
+      "error": "Page.goto: Navigation to \"http://localhost:3000/\" is interrupted by another navigation to \"chrome-error://chromewebdata/\"\nCall log:\n  - navigating to \"http://localhost:3000/\", waiting until \"networkidle\"\n",
+      "success": false
+    }
+  },
+  "summary": {
+    "total_interfaces": 3,
+    "successful_interfaces": 1,
+    "interface_success_rate": 33.33333333333333,
+    "total_api_tests": 3,
+    "successful_api_tests": 1,
+    "api_success_rate": 33.33333333333333,
+    "overall_success": false
+  },
+  "api_tests": {
+    "database_stats": {
+      "status": 200,
+      "success": true,
+      "data_size": 91
+    },
+    "enhanced_stats": {
+      "status": "error",
+      "success": false,
+      "error": "HTTPConnectionPool(host='localhost', port=3001): Max retries exceeded with url: /api/enhanced-stats (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f6903153390>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    },
+    "clipboard_history": {
+      "status": "error",
+      "success": false,
+      "error": "HTTPConnectionPool(host='localhost', port=3001): Max retries exceeded with url: /api/clipboard/history (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f6903153ed0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+    }
+  }
+}

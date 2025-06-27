@@ -54,8 +54,12 @@ import {
   Memory,
   Dashboard,
   Hub,
+  Storage,
+  Settings,
+  AutoAwesome,
 } from '@mui/icons-material'
 import ClipboardDataService from './services/ClipboardDataService'
+// Removed ClipboardCRUDService to fix import issues
 import SimpleChartRenderer from './components/SimpleChartRenderer'
 import DataPreview from './components/DataPreview'
 import ChartSelector from './components/ChartSelector'
@@ -64,6 +68,11 @@ import SimpleTest from './components/SimpleTest'
 import SmartInsights from './components/SmartInsights'
 import ImprovedMemoryDashboard from './components/ImprovedMemoryDashboard'
 import Neo4jVisualizer from './components/Neo4jVisualizer'
+import DatabaseManager from './components/DatabaseManager'
+import SimpleClipboardCRUD from './components/SimpleClipboardCRUD'
+import ImprovedClipboardVisualizations from './components/ImprovedClipboardVisualizations'
+import InteractiveClipboardDashboard from './components/InteractiveClipboardDashboard'
+import EnhancedClipboardDashboard from './components/EnhancedClipboardDashboard'
 
 // Focused on the most useful chart types based on research
 const CHART_TYPES = [
@@ -79,7 +88,7 @@ const CHART_TYPES = [
 function App() {
   const [clipboardData, setClipboardData] = useState([])
   const [filteredData, setFilteredData] = useState([])
-  const [selectedChart, setSelectedChart] = useState('table')
+  const [selectedChart, setSelectedChart] = useState('network')
   const [processedData, setProcessedData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -90,10 +99,18 @@ function App() {
   const [showDataPreview, setShowDataPreview] = useState(false)
   const [currentTab, setCurrentTab] = useState(0)
 
-  // Load clipboard data on component mount
+  // Load clipboard data on component mount and force refresh
   useEffect(() => {
-    console.log('App mounted, loading clipboard data...')
+    console.log('App mounted - loading real clipboard data immediately...')
     loadClipboardData()
+
+    // Also set up periodic refresh to ensure data stays current
+    const interval = setInterval(() => {
+      console.log('Periodic refresh of clipboard data...')
+      loadClipboardData()
+    }, 30000) // Refresh every 30 seconds
+
+    return () => clearInterval(interval)
   }, [])
 
   // Filter data when search term or filter changes
@@ -127,40 +144,91 @@ function App() {
   }, [filteredData, selectedChart])
 
   const loadClipboardData = async () => {
-    console.log('Loading clipboard data...')
+    console.log('Loading real clipboard data for graphs...')
     setLoading(true)
     try {
-      // Use direct API call instead of service
-      console.log('Making direct API call...')
-      const response = await fetch('http://localhost:3001/api/clipboard/history')
-      console.log('Response status:', response.status)
+      // Use direct API call to get actual clipboard data (all entries)
+      console.log('Fetching real clipboard data from API...')
+      const response = await fetch('http://localhost:3001/api/clipboard/history?limit=1000')
 
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`)
       }
 
       const data = await response.json()
-      console.log('Received data:', data.length, 'entries')
+      console.log('Received real data:', data.length, 'entries')
 
       if (!Array.isArray(data)) {
         throw new Error('API returned invalid data format')
       }
 
       setClipboardData(data)
-      
-      // Calculate basic statistics
+
+      // Calculate real statistics from actual clipboard data
       const stats = {
         totalEntries: data.length,
-        textEntries: data.filter(item => item.content_type === 'Text').length,
-        jsonEntries: data.filter(item => item.content.trim().startsWith('{') || item.content.trim().startsWith('[')).length,
-        csvEntries: data.filter(item => item.content.includes(',') && item.content.includes('\n')).length,
-        urlEntries: data.filter(item => item.content.includes('http')).length,
+        textEntries: data.filter(item => item.content_type === 'Text' || item.content_type === 'text').length,
+        jsonEntries: data.filter(item =>
+          item.content_type === 'JSON' ||
+          item.content_type === 'json' ||
+          (item.content && (item.content.trim().startsWith('{') || item.content.trim().startsWith('[')))
+        ).length,
+        csvEntries: data.filter(item =>
+          item.content_type === 'CSV' ||
+          item.content_type === 'csv' ||
+          (item.content && item.content.includes(',') && item.content.includes('\n'))
+        ).length,
+        urlEntries: data.filter(item =>
+          item.content_type === 'URL' ||
+          item.content_type === 'url' ||
+          (item.content && (item.content.includes('http://') || item.content.includes('https://')))
+        ).length,
+        emailEntries: data.filter(item =>
+          item.content_type === 'Email' ||
+          item.content_type === 'email' ||
+          (item.content && item.content.includes('@') && item.content.includes('.'))
+        ).length,
+        totalSize: data.reduce((sum, item) => sum + (item.size_bytes || new Blob([item.content || '']).size), 0),
+        recentEntries: data.filter(item => {
+          const entryDate = new Date(item.timestamp)
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+          return entryDate > oneDayAgo
+        }).length,
+        // Extract actual domains from URLs for better categorization
+        domains: [...new Set(data
+          .filter(item => item.content && (item.content.includes('http://') || item.content.includes('https://')))
+          .map(item => {
+            try {
+              const url = new URL(item.content.match(/(https?:\/\/[^\s]+)/)[0])
+              return url.hostname
+            } catch {
+              return null
+            }
+          })
+          .filter(Boolean)
+        )]
       }
+
+      console.log('Calculated real statistics:', stats)
       setDataStats(stats)
-      
+
       setSnackbarOpen(true)
     } catch (err) {
+      console.error('Failed to load clipboard data:', err)
       setError('Failed to load clipboard data: ' + err.message)
+      // Set empty data instead of keeping old data
+      setClipboardData([])
+      setDataStats({
+        totalEntries: 0,
+        textEntries: 0,
+        jsonEntries: 0,
+        csvEntries: 0,
+        urlEntries: 0,
+        emailEntries: 0,
+        totalSize: 0,
+        recentEntries: 0,
+        domains: []
+      })
     } finally {
       setLoading(false)
     }
@@ -440,7 +508,11 @@ function App() {
             }}
           >
             <Tab icon={<Dashboard />} label="Clipboard Analytics" />
+            <Tab icon={<TrendingUp />} label="Interactive Dashboard" />
+            <Tab icon={<AutoAwesome />} label="Enhanced Dashboard" />
             <Tab icon={<Memory />} label="Memory Protection" />
+            <Tab icon={<Storage />} label="Database Management" />
+            <Tab icon={<Settings />} label="Clipboard CRUD" />
           </Tabs>
         </Box>
       </AppBar>
@@ -814,9 +886,29 @@ function App() {
         </Grid>
         )}
 
-        {/* Memory Protection Dashboard Tab */}
+        {/* Interactive Dashboard Tab */}
         {currentTab === 1 && (
+          <InteractiveClipboardDashboard clipboardData={clipboardData} />
+        )}
+
+        {/* Enhanced Dashboard Tab */}
+        {currentTab === 2 && (
+          <EnhancedClipboardDashboard clipboardData={clipboardData} />
+        )}
+
+        {/* Memory Protection Dashboard Tab */}
+        {currentTab === 3 && (
           <ImprovedMemoryDashboard />
+        )}
+
+        {/* Database Management Tab */}
+        {currentTab === 4 && (
+          <DatabaseManager />
+        )}
+
+        {/* Clipboard CRUD Management Tab */}
+        {currentTab === 5 && (
+          <SimpleClipboardCRUD />
         )}
       </Container>
 

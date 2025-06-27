@@ -1,14 +1,15 @@
 import React from 'react'
 import { Box, Typography, Paper, LinearProgress, Chip } from '@mui/material'
 import DataTable from './DataTable'
+import EnhancedDataTable from './EnhancedDataTable'
 import Neo4jVisualizer from './Neo4jVisualizer'
 
 function SimpleChartRenderer({ data, chartType, rawData }) {
   console.log('SimpleChartRenderer:', { chartType, data, rawData })
 
-  // Handle table view
+  // Handle table view with enhanced Material React Table
   if (chartType === 'table') {
-    return <DataTable data={rawData || data} title="Clipboard Data Explorer" />
+    return <EnhancedDataTable data={rawData || data} title="Enhanced Clipboard Data Explorer" />
   }
 
   // Handle network graph view

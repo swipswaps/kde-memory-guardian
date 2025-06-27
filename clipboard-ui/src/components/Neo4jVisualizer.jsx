@@ -16,7 +16,26 @@ import {
   FormControlLabel,
   Slider,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  ButtonGroup,
+  Tooltip,
+  IconButton,
+  Stack,
+  Divider,
+  SpeedDial,
+  SpeedDialAction,
+  SpeedDialIcon,
+  Fab,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  ListItemButton,
+  Badge
 } from '@mui/material'
 import {
   AccountTree,
@@ -25,7 +44,27 @@ import {
   Refresh,
   ZoomIn,
   ZoomOut,
-  CenterFocusStrong
+  CenterFocusStrong,
+  ExpandMore,
+  Settings,
+  Tune,
+  Palette,
+  Speed,
+  Timeline,
+  Fullscreen,
+  FullscreenExit,
+  Save,
+  Share,
+  Download,
+  Visibility,
+  VisibilityOff,
+  PlayArrow,
+  Pause,
+  Stop,
+  SkipNext,
+  SkipPrevious,
+  Menu,
+  Close
 } from '@mui/icons-material'
 import {
   renderForceDirectedGraph,
@@ -34,9 +73,53 @@ import {
 } from '../charts/Neo4jCharts'
 
 const VISUALIZATION_TYPES = [
-  { id: 'force', name: 'Force-Directed Network', icon: <Hub />, description: 'Interactive network with physics simulation' },
-  { id: 'hierarchical', name: 'Hierarchical Tree', icon: <AccountTree />, description: 'Tree structure with parent-child relationships' },
-  { id: 'circular', name: 'Circular Network', icon: <RadioButtonUnchecked />, description: 'Nodes arranged in circular patterns' }
+  {
+    id: 'force',
+    name: 'Force-Directed Network',
+    icon: <Hub />,
+    description: 'Interactive network with physics simulation',
+    color: '#1976d2',
+    features: ['Physics Simulation', 'Drag & Drop', 'Auto Layout', 'Clustering']
+  },
+  {
+    id: 'hierarchical',
+    name: 'Hierarchical Tree',
+    icon: <AccountTree />,
+    description: 'Tree structure with parent-child relationships',
+    color: '#388e3c',
+    features: ['Tree Layout', 'Parent-Child', 'Expandable', 'Structured']
+  },
+  {
+    id: 'circular',
+    name: 'Circular Network',
+    icon: <RadioButtonUnchecked />,
+    description: 'Nodes arranged in circular patterns',
+    color: '#f57c00',
+    features: ['Radial Layout', 'Curved Links', 'Topology', 'Symmetrical']
+  }
+]
+
+const PRESET_CONFIGURATIONS = [
+  {
+    name: 'Exploration',
+    description: 'Best for discovering relationships',
+    settings: { nodeRadius: 25, linkDistance: 150, chargeStrength: -400 }
+  },
+  {
+    name: 'Compact',
+    description: 'Dense layout for many nodes',
+    settings: { nodeRadius: 15, linkDistance: 80, chargeStrength: -200 }
+  },
+  {
+    name: 'Spacious',
+    description: 'Spread out for detailed analysis',
+    settings: { nodeRadius: 30, linkDistance: 200, chargeStrength: -600 }
+  },
+  {
+    name: 'Performance',
+    description: 'Optimized for large datasets',
+    settings: { nodeRadius: 12, linkDistance: 60, chargeStrength: -150 }
+  }
 ]
 
 function Neo4jVisualizer({ data, width = 800, height = 600 }) {
@@ -46,14 +129,24 @@ function Neo4jVisualizer({ data, width = 800, height = 600 }) {
   const [error, setError] = useState(null)
   const [graphData, setGraphData] = useState(null)
   const [simulation, setSimulation] = useState(null)
-  
+  const [graphControls, setGraphControls] = useState(null)
+
+  // Enhanced UI state
+  const [controlsOpen, setControlsOpen] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(true)
+  const [selectedPreset, setSelectedPreset] = useState('Exploration')
+
   // Visualization options
   const [showLabels, setShowLabels] = useState(true)
   const [enableZoom, setEnableZoom] = useState(true)
   const [enableDrag, setEnableDrag] = useState(true)
-  const [nodeRadius, setNodeRadius] = useState(20)
-  const [linkDistance, setLinkDistance] = useState(100)
-  const [chargeStrength, setChargeStrength] = useState(-300)
+  const [nodeRadius, setNodeRadius] = useState(25)
+  const [linkDistance, setLinkDistance] = useState(150)
+  const [chargeStrength, setChargeStrength] = useState(-400)
+  const [animationSpeed, setAnimationSpeed] = useState(1)
+  const [showStats, setShowStats] = useState(true)
+  const [colorScheme, setColorScheme] = useState('default')
 
   // Process clipboard data into graph format
   useEffect(() => {
@@ -219,14 +312,17 @@ function Neo4jVisualizer({ data, width = 800, height = 600 }) {
         case 'force':
           result = renderForceDirectedGraph(graphData, svgRef.current, width, height, options)
           setSimulation(result.simulation)
+          setGraphControls(result) // Store all control functions
           break
         case 'hierarchical':
           // Convert graph data to hierarchical format
           const hierarchicalData = convertToHierarchical(graphData)
           result = renderHierarchicalGraph(hierarchicalData, svgRef.current, width, height, options)
+          setGraphControls(result)
           break
         case 'circular':
           result = renderCircularNetwork(graphData, svgRef.current, width, height, options)
+          setGraphControls(result)
           break
         default:
           throw new Error(`Unknown visualization type: ${visualizationType}`)
@@ -237,28 +333,81 @@ function Neo4jVisualizer({ data, width = 800, height = 600 }) {
   }
 
   const convertToHierarchical = (graphData) => {
-    // Find category nodes as root level
-    const categoryNodes = graphData.nodes.filter(n => n.isCategory)
-    const contentNodes = graphData.nodes.filter(n => !n.isCategory && !n.isDomain && !n.isKeyword)
-    
-    if (categoryNodes.length === 0) {
-      return { name: 'Root', children: contentNodes.map(n => ({ ...n, name: n.label })) }
-    }
+    try {
+      if (!graphData || !graphData.nodes || !Array.isArray(graphData.nodes)) {
+        console.warn('Invalid graph data for hierarchical conversion:', graphData)
+        return { name: 'Root', children: [] }
+      }
 
-    const root = {
-      name: 'Clipboard Data',
-      children: categoryNodes.map(cat => ({
-        ...cat,
-        name: cat.label,
-        children: contentNodes
-          .filter(node => graphData.links.some(link => 
-            link.source === node.id && link.target === cat.id && link.relationship === 'IS_TYPE'
-          ))
-          .map(n => ({ ...n, name: n.label }))
-      }))
-    }
+      // Find category nodes as root level
+      const categoryNodes = graphData.nodes.filter(n => n.isCategory)
+      const contentNodes = graphData.nodes.filter(n => !n.isCategory && !n.isDomain && !n.isKeyword)
+      const links = graphData.links || []
 
-    return root
+      if (categoryNodes.length === 0) {
+        // No categories, create a simple flat hierarchy
+        return {
+          name: 'Clipboard Data',
+          children: contentNodes.map(n => ({
+            ...n,
+            name: n.label || n.id || 'Unknown',
+            type: n.type || 'content'
+          }))
+        }
+      }
+
+      // Create hierarchical structure with categories
+      const root = {
+        name: 'Clipboard Data',
+        type: 'root',
+        children: categoryNodes.map(cat => {
+          const categoryChildren = contentNodes.filter(node => {
+            return links.some(link => {
+              const sourceId = typeof link.source === 'object' ? link.source.id : link.source
+              const targetId = typeof link.target === 'object' ? link.target.id : link.target
+              return sourceId === node.id && targetId === cat.id && link.relationship === 'IS_TYPE'
+            })
+          })
+
+          return {
+            ...cat,
+            name: cat.label || cat.id || 'Category',
+            type: cat.type || 'category',
+            children: categoryChildren.map(n => ({
+              ...n,
+              name: n.label || n.id || 'Item',
+              type: n.type || 'content'
+            }))
+          }
+        })
+      }
+
+      // Add orphaned nodes (nodes without category relationships)
+      const orphanedNodes = contentNodes.filter(node => {
+        return !links.some(link => {
+          const sourceId = typeof link.source === 'object' ? link.source.id : link.source
+          return sourceId === node.id && link.relationship === 'IS_TYPE'
+        })
+      })
+
+      if (orphanedNodes.length > 0) {
+        root.children.push({
+          id: 'orphaned',
+          name: 'Other Items',
+          type: 'category',
+          children: orphanedNodes.map(n => ({
+            ...n,
+            name: n.label || n.id || 'Item',
+            type: n.type || 'content'
+          }))
+        })
+      }
+
+      return root
+    } catch (error) {
+      console.error('Error converting to hierarchical data:', error)
+      return { name: 'Root', children: [] }
+    }
   }
 
   const getContentType = (content) => {
@@ -291,6 +440,7 @@ function Neo4jVisualizer({ data, width = 800, height = 600 }) {
     return freq
   }
 
+  // Enhanced control functions
   const handleRefresh = () => {
     if (data) {
       processDataToGraph(data)
@@ -298,10 +448,101 @@ function Neo4jVisualizer({ data, width = 800, height = 600 }) {
   }
 
   const handleCenterView = () => {
-    if (simulation) {
+    if (graphControls && graphControls.centerGraph) {
+      graphControls.centerGraph()
+    } else if (simulation) {
       simulation.alpha(0.3).restart()
     }
   }
+
+  const handlePresetChange = (presetName) => {
+    const preset = PRESET_CONFIGURATIONS.find(p => p.name === presetName)
+    if (preset) {
+      setSelectedPreset(presetName)
+      setNodeRadius(preset.settings.nodeRadius)
+      setLinkDistance(preset.settings.linkDistance)
+      setChargeStrength(preset.settings.chargeStrength)
+    }
+  }
+
+  const handlePlayPause = () => {
+    if (simulation) {
+      if (isPlaying) {
+        simulation.stop()
+        setIsPlaying(false)
+      } else {
+        simulation.alpha(0.3).restart()
+        setIsPlaying(true)
+      }
+    }
+  }
+
+  const handleExport = (format) => {
+    if (!svgRef.current) return
+
+    const svg = svgRef.current
+    const serializer = new XMLSerializer()
+    const svgString = serializer.serializeToString(svg)
+
+    if (format === 'svg') {
+      const blob = new Blob([svgString], { type: 'image/svg+xml' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'network-graph.svg'
+      a.click()
+    } else if (format === 'png') {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+      img.onload = () => {
+        canvas.width = img.width
+        canvas.height = img.height
+        ctx.drawImage(img, 0, 0)
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = 'network-graph.png'
+          a.click()
+        })
+      }
+      img.src = 'data:image/svg+xml;base64,' + btoa(svgString)
+    }
+  }
+
+  const toggleFullscreen = () => {
+    setFullscreen(!fullscreen)
+  }
+
+  const handleShowLabelsToggle = (show) => {
+    setShowLabels(show)
+    if (graphControls && graphControls.toggleLabels) {
+      graphControls.toggleLabels(show)
+    }
+  }
+
+  const handleParameterUpdate = () => {
+    if (graphControls && graphControls.updateParameters) {
+      graphControls.updateParameters({
+        nodeRadius,
+        linkDistance,
+        chargeStrength,
+        showLabels
+      })
+    }
+  }
+
+  // Update parameters when they change
+  useEffect(() => {
+    if (graphControls && graphControls.updateParameters) {
+      const timeoutId = setTimeout(() => {
+        handleParameterUpdate()
+      }, 300) // Debounce parameter updates
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [nodeRadius, linkDistance, chargeStrength])
 
   if (loading) {
     return (
@@ -357,7 +598,7 @@ function Neo4jVisualizer({ data, width = 800, height = 600 }) {
         <Grid item xs={12} md={8}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <FormControlLabel
-              control={<Switch checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} />}
+              control={<Switch checked={showLabels} onChange={(e) => handleShowLabelsToggle(e.target.checked)} />}
               label="Show Labels"
             />
             <FormControlLabel
@@ -443,7 +684,17 @@ function Neo4jVisualizer({ data, width = 800, height = 600 }) {
           {VISUALIZATION_TYPES.find(t => t.id === visualizationType)?.name} - Clipboard Network
         </Typography>
         <Box sx={{ border: '1px solid #ddd', borderRadius: 1, overflow: 'hidden' }}>
-          <svg ref={svgRef} style={{ display: 'block', background: '#fafafa' }} />
+          <svg
+            ref={svgRef}
+            width={width}
+            height={height}
+            style={{
+              display: 'block',
+              background: '#fafafa',
+              maxWidth: '100%',
+              height: 'auto'
+            }}
+          />
         </Box>
       </Paper>
     </Box>

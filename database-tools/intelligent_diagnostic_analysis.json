@@ -1,0 +1,275 @@
+{
+  "timestamp": "2025-06-26T13:02:43.319812",
+  "issues_found": [
+    {
+      "type": "memory_exhaustion",
+      "severity": "HIGH",
+      "category": "Memory Management",
+      "pattern_matched": "oom.*killed",
+      "context": "s:\n\nWrapped into a system tray popup notifier?\n\nIntegrated with journalctl -o cat -n 100 | grep -i 'OOM|killed|tracker' for app-specific causes?\n\nOr embedded into a curses UI?\n\nPrompt to proceed:\n\n\u201cContinue wit",
+      "source_file": "682860cc-3348-8008-a09e-25f9e754d16d_2025_05_30_22_37_00.txt",
+      "line_number": 255,
+      "solutions": [
+        {
+          "title": "Immediate Memory Relief",
+          "commands": [
+            "sudo sysctl vm.drop_caches=3",
+            "sudo systemctl restart earlyoom",
+            "pkill -f \"code.*--type=renderer\""
+          ],
+          "description": "Clear system caches and restart memory protection"
+        },
+        {
+          "title": "VSCode Memory Optimization",
+          "commands": [
+            "code --max-memory=4096",
+            "code --disable-extensions"
+          ],
+          "description": "Restart VSCode with memory limits and disabled extensions"
+        },
+        {
+          "title": "System Memory Monitoring",
+          "commands": [
+            "sudo systemctl enable --now nohang",
+            "echo \"vm.swappiness=10\" | sudo tee -a /etc/sysctl.conf"
+          ],
+          "description": "Enable advanced memory protection and optimize swap usage"
+        }
+      ]
+    },
+    {
+      "type": "filesystem_issues",
+      "severity": "HIGH",
+      "category": "Filesystem",
+      "pattern_matched": "permission denied",
+      "context": "rofile: Error opening file /var/lib/gdm/.local/share/icc/edid-577bb29f8009cab9cee23556d7a71ee3.icc: Permission denied\nMay 30 18:54:59 localhost-live.attlocal.net gnome-shell[2944]: Failed to create color profile from",
+      "source_file": "logs_journal_display_servers.txt",
+      "line_number": 50,
+      "solutions": [
+        {
+          "title": "Disk Space Cleanup",
+          "commands": [
+            "sudo journalctl --vacuum-time=7d",
+            "sudo dnf clean all",
+            "rm -rf ~/.cache/vscode-*"
+          ],
+          "description": "Clean system logs, package cache, and VSCode cache"
+        },
+        {
+          "title": "Permission Fix",
+          "commands": [
+            "sudo chown -R $USER:$USER ~/.vscode",
+            "sudo chown -R $USER:$USER ~/.config/Code"
+          ],
+          "description": "Fix VSCode directory permissions"
+        }
+      ]
+    },
+    {
+      "type": "filesystem_issues",
+      "severity": "HIGH",
+      "category": "Filesystem",
+      "pattern_matched": "permission denied",
+      "context": "rofile: Error opening file /var/lib/gdm/.local/share/icc/edid-0e0753bcb1eaad548754eccd6747a49b.icc: Permission denied\nMay 30 18:55:00 localhost-live.attlocal.net gnome-shell[2944]: GNOME Shell started at Fri May 30 20",
+      "source_file": "logs_journal_display_servers.txt",
+      "line_number": 51,
+      "solutions": [
+        {
+          "title": "Disk Space Cleanup",
+          "commands": [
+            "sudo journalctl --vacuum-time=7d",
+            "sudo dnf clean all",
+            "rm -rf ~/.cache/vscode-*"
+          ],
+          "description": "Clean system logs, package cache, and VSCode cache"
+        },
+        {
+          "title": "Permission Fix",
+          "commands": [
+            "sudo chown -R $USER:$USER ~/.vscode",
+            "sudo chown -R $USER:$USER ~/.config/Code"
+          ],
+          "description": "Fix VSCode directory permissions"
+        }
+      ]
+    }
+  ],
+  "system_status": {},
+  "recommendations": [
+    {
+      "category": "Memory Management",
+      "issue_count": 1,
+      "severity_breakdown": {
+        "HIGH": 1
+      },
+      "priority": "HIGH",
+      "recommended_actions": [
+        {
+          "title": "Immediate Memory Relief",
+          "commands": [
+            "sudo sysctl vm.drop_caches=3",
+            "sudo systemctl restart earlyoom",
+            "pkill -f \"code.*--type=renderer\""
+          ],
+          "description": "Clear system caches and restart memory protection"
+        },
+        {
+          "title": "VSCode Memory Optimization",
+          "commands": [
+            "code --max-memory=4096",
+            "code --disable-extensions"
+          ],
+          "description": "Restart VSCode with memory limits and disabled extensions"
+        },
+        {
+          "title": "System Memory Monitoring",
+          "commands": [
+            "sudo systemctl enable --now nohang",
+            "echo \"vm.swappiness=10\" | sudo tee -a /etc/sysctl.conf"
+          ],
+          "description": "Enable advanced memory protection and optimize swap usage"
+        }
+      ]
+    },
+    {
+      "category": "Filesystem",
+      "issue_count": 2,
+      "severity_breakdown": {
+        "HIGH": 2
+      },
+      "priority": "HIGH",
+      "recommended_actions": [
+        {
+          "title": "Disk Space Cleanup",
+          "commands": [
+            "sudo journalctl --vacuum-time=7d",
+            "sudo dnf clean all",
+            "rm -rf ~/.cache/vscode-*"
+          ],
+          "description": "Clean system logs, package cache, and VSCode cache"
+        },
+        {
+          "title": "Permission Fix",
+          "commands": [
+            "sudo chown -R $USER:$USER ~/.vscode",
+            "sudo chown -R $USER:$USER ~/.config/Code"
+          ],
+          "description": "Fix VSCode directory permissions"
+        },
+        {
+          "title": "Disk Space Cleanup",
+          "commands": [
+            "sudo journalctl --vacuum-time=7d",
+            "sudo dnf clean all",
+            "rm -rf ~/.cache/vscode-*"
+          ],
+          "description": "Clean system logs, package cache, and VSCode cache"
+        },
+        {
+          "title": "Permission Fix",
+          "commands": [
+            "sudo chown -R $USER:$USER ~/.vscode",
+            "sudo chown -R $USER:$USER ~/.config/Code"
+          ],
+          "description": "Fix VSCode directory permissions"
+        }
+      ]
+    }
+  ],
+  "immediate_actions": [
+    {
+      "title": "Fix Memory Exhaustion",
+      "description": "Clear system caches and restart memory protection",
+      "commands": [
+        "sudo sysctl vm.drop_caches=3",
+        "sudo systemctl restart earlyoom",
+        "pkill -f \"code.*--type=renderer\""
+      ],
+      "category": "Memory Management",
+      "urgency": "IMMEDIATE"
+    },
+    {
+      "title": "Fix Memory Exhaustion",
+      "description": "Restart VSCode with memory limits and disabled extensions",
+      "commands": [
+        "code --max-memory=4096",
+        "code --disable-extensions"
+      ],
+      "category": "Memory Management",
+      "urgency": "IMMEDIATE"
+    },
+    {
+      "title": "Fix Filesystem Issues",
+      "description": "Clean system logs, package cache, and VSCode cache",
+      "commands": [
+        "sudo journalctl --vacuum-time=7d",
+        "sudo dnf clean all",
+        "rm -rf ~/.cache/vscode-*"
+      ],
+      "category": "Filesystem",
+      "urgency": "IMMEDIATE"
+    },
+    {
+      "title": "Fix Filesystem Issues",
+      "description": "Fix VSCode directory permissions",
+      "commands": [
+        "sudo chown -R $USER:$USER ~/.vscode",
+        "sudo chown -R $USER:$USER ~/.config/Code"
+      ],
+      "category": "Filesystem",
+      "urgency": "IMMEDIATE"
+    },
+    {
+      "title": "Fix Filesystem Issues",
+      "description": "Clean system logs, package cache, and VSCode cache",
+      "commands": [
+        "sudo journalctl --vacuum-time=7d",
+        "sudo dnf clean all",
+        "rm -rf ~/.cache/vscode-*"
+      ],
+      "category": "Filesystem",
+      "urgency": "IMMEDIATE"
+    },
+    {
+      "title": "Fix Filesystem Issues",
+      "description": "Fix VSCode directory permissions",
+      "commands": [
+        "sudo chown -R $USER:$USER ~/.vscode",
+        "sudo chown -R $USER:$USER ~/.config/Code"
+      ],
+      "category": "Filesystem",
+      "urgency": "IMMEDIATE"
+    }
+  ],
+  "preventive_measures": [
+    {
+      "title": "Enhanced Memory Protection",
+      "description": "Install and configure advanced memory management tools",
+      "commands": [
+        "sudo dnf install -y earlyoom nohang",
+        "sudo systemctl enable --now earlyoom",
+        "sudo systemctl enable --now nohang",
+        "echo \"vm.swappiness=10\" | sudo tee -a /etc/sysctl.conf"
+      ],
+      "category": "System Hardening"
+    },
+    {
+      "title": "VSCode Optimization",
+      "description": "Configure VSCode for stability and performance",
+      "commands": [
+        "mkdir -p ~/.config/Code/User",
+        "echo '{\"window.titleBarStyle\": \"custom\", \"extensions.autoUpdate\": false}' > ~/.config/Code/User/settings.json"
+      ],
+      "category": "Application Tuning"
+    },
+    {
+      "title": "System Monitoring",
+      "description": "Set up continuous system monitoring",
+      "commands": [
+        "sudo systemctl enable --now systemd-oomd",
+        "echo \"* soft memlock unlimited\" | sudo tee -a /etc/security/limits.conf"
+      ],
+      "category": "Monitoring"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+#!/bin/bash
+################################################################################
+# cbv - Clipboard Viewer with Text Selection
+# WHO: Quick clipboard viewer that enables text selection
+# WHAT: Lists clipboard entries and displays them for mouse selection
+# WHY: Solves ncurses text selection limitation with simple terminal display
+# HOW: Plain text output that supports normal terminal text selection
+################################################################################
+
+# Try to find clipboard_view.py in multiple locations
+CLIPBOARD_VIEW=""
+for path in \
+    "$(dirname "${BASH_SOURCE[0]}")/clipboard_view.py" \
+    "$HOME/.local/bin/clipboard_view.py" \
+    "$HOME/Documents/6854a1da-e23c-8008-a9fc-76b7fa3c1f92/kde-memory-guardian/ncurses-clipboard/clipboard_view.py"
+do
+    if [ -f "$path" ]; then
+        CLIPBOARD_VIEW="$path"
+        break
+    fi
+done
+
+# Check if clipboard_view.py exists
+if [ ! -f "$CLIPBOARD_VIEW" ]; then
+    echo "❌ Error: clipboard_view.py not found at $CLIPBOARD_VIEW"
+    exit 1
+fi
+
+# If no arguments, show list
+if [ $# -eq 0 ]; then
+    echo "📋 CLIPBOARD VIEWER - TEXT SELECTION ENABLED"
+    echo "=============================================="
+    python3 "$CLIPBOARD_VIEW"
+    echo ""
+    echo "🎯 Quick usage:"
+    echo "  cbv 1    # View entry 1 with text selection"
+    echo "  cbv 2    # View entry 2 with text selection"
+    echo "  cbv list # Show this list again"
+    echo ""
+    echo "💡 In the viewer, use mouse to select text + Ctrl+C to copy"
+    exit 0
+fi
+
+# Handle arguments
+case "$1" in
+    "list"|"l")
+        python3 "$CLIPBOARD_VIEW"
+        ;;
+    "help"|"h"|"-h"|"--help")
+        echo "📋 Clipboard Viewer (cbv) - Text Selection Enabled"
+        echo ""
+        echo "Usage:"
+        echo "  cbv           # Show list of clipboard entries"
+        echo "  cbv <number>  # View specific entry with text selection"
+        echo "  cbv list      # Show list of entries"
+        echo "  cbv help      # Show this help"
+        echo ""
+        echo "Examples:"
+        echo "  cbv 1         # View entry 1"
+        echo "  cbv 5         # View entry 5"
+        echo ""
+        echo "💡 Text selection works normally:"
+        echo "   • Use mouse to select text"
+        echo "   • Press Ctrl+C to copy"
+        echo "   • No ncurses limitations!"
+        ;;
+    *)
+        # Check if argument is a number
+        if [[ "$1" =~ ^[0-9]+$ ]]; then
+            echo "📋 Viewing clipboard entry #$1"
+            echo "================================"
+            python3 "$CLIPBOARD_VIEW" "$1"
+            echo ""
+            echo "💡 Select any text above with your mouse and press Ctrl+C to copy"
+        else
+            echo "❌ Invalid argument: $1"
+            echo "💡 Use 'cbv help' for usage information"
+            exit 1
+        fi
+        ;;
+esac

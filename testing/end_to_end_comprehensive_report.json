@@ -1,0 +1,92 @@
+{
+  "timestamp": "2025-06-26T12:31:52.189186",
+  "test_type": "End-to-End Comprehensive (Playwright + Selenium + Dogtail)",
+  "crash_file": "/home/owner/Documents/2025_06_26_vcscode_crash.txt",
+  "interface_url": "http://localhost:9000",
+  "summary": {
+    "total_phases": 7,
+    "passed": 6,
+    "partial": 0,
+    "failed": 1,
+    "success_rate": 85.71428571428571
+  },
+  "detailed_results": [
+    [
+      "Phase 1 - Playwright",
+      {
+        "status": "PASS",
+        "title": "\ud83d\udca5 Crash Analysis Correlator",
+        "buttons_found": true,
+        "workflow_initiated": true,
+        "text_selectable": true,
+        "screenshot": "phase1_playwright_test.png"
+      }
+    ],
+    [
+      "Phase 2 - Selenium",
+      {
+        "status": "PASS",
+        "title": "\ud83d\udca5 Crash Analysis Correlator",
+        "elements_interactive": true,
+        "workflow_executed": true,
+        "text_selectable": false
+      }
+    ],
+    [
+      "Phase 3 - Dogtail",
+      {
+        "status": "FAIL",
+        "error": "[Errno 2] No such file or directory: 'at-spi-bus-launcher'"
+      }
+    ],
+    [
+      "Phase 4 - Terminal",
+      {
+        "status": "PASS",
+        "api_working": true,
+        "terminal_processes": 15,
+        "wrapper_exists": true
+      }
+    ],
+    [
+      "Phase 5 - Data Collection",
+      {
+        "status": "PASS",
+        "existing_sudo_files": 16,
+        "journalctl_working": true,
+        "dmesg_working": false,
+        "crash_file_exists": true,
+        "crash_file_size": 105673
+      }
+    ],
+    [
+      "Phase 6 - Integration",
+      {
+        "status": "PASS",
+        "api_analysis_working": true,
+        "has_analysis_data": true,
+        "sudo_integration_working": true,
+        "sudo_markers_found": 2,
+        "evidence_present": true,
+        "evidence_sections": 4
+      }
+    ],
+    [
+      "Phase 7 - Complete Workflow",
+      {
+        "status": "PASS",
+        "phases_passed": 5,
+        "total_phases": 6,
+        "success_rate": 83.33333333333334,
+        "phase_results": {
+          "Phase 1 - Playwright": "PASS",
+          "Phase 2 - Selenium": "PASS",
+          "Phase 3 - Dogtail": "FAIL",
+          "Phase 4 - Terminal": "PASS",
+          "Phase 5 - Data Collection": "PASS",
+          "Phase 6 - Integration": "PASS"
+        }
+      }
+    ]
+  ]
+}
