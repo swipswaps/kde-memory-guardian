@@ -16,7 +16,7 @@ from urllib.parse import urlparse, parse_qs
 class KDEMemoryGuardianHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed_path = urlparse(self.path)
-        
+
         if parsed_path.path == '/api/stats':
             self.send_api_response(self.get_memory_stats())
         elif parsed_path.path == '/api/logs':
@@ -25,6 +25,21 @@ class KDEMemoryGuardianHandler(http.server.SimpleHTTPRequestHandler):
             self.send_api_response(self.run_test_suite())
         else:
             super().do_GET()
+
+    def do_POST(self):
+        parsed_path = urlparse(self.path)
+
+        if parsed_path.path == '/api/restart-plasma':
+            self.send_api_response(self.restart_plasma())
+        elif parsed_path.path == '/api/clear-cache':
+            self.send_api_response(self.clear_cache())
+        elif parsed_path.path == '/api/view-logs':
+            self.send_api_response(self.view_logs())
+        elif parsed_path.path == '/api/run-tests':
+            self.send_api_response(self.run_comprehensive_tests())
+        else:
+            self.send_response(404)
+            self.end_headers()
     
     def send_api_response(self, data):
         self.send_response(200)
@@ -147,6 +162,204 @@ class KDEMemoryGuardianHandler(http.server.SimpleHTTPRequestHandler):
             })
         
         return results
+
+    def restart_plasma(self):
+        """Actually restart Plasma shell"""
+        try:
+            print("🔄 REAL OPERATION: Restarting Plasma shell...")
+
+            # Kill plasmashell
+            result1 = subprocess.run(['killall', 'plasmashell'],
+                                   capture_output=True, text=True)
+
+            # Wait a moment
+            time.sleep(2)
+
+            # Start plasmashell
+            result2 = subprocess.run(['kstart', 'plasmashell'],
+                                   capture_output=True, text=True)
+
+            return {
+                'action': 'restart_plasma',
+                'status': 'SUCCESS',
+                'details': f'Plasma restarted - killall exit code: {result1.returncode}, kstart exit code: {result2.returncode}',
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'real_operation': True
+            }
+
+        except Exception as e:
+            return {
+                'action': 'restart_plasma',
+                'status': 'ERROR',
+                'error': str(e),
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'real_operation': True
+            }
+
+    def clear_cache(self):
+        """Actually clear system cache"""
+        try:
+            print("🧹 REAL OPERATION: Clearing system cache...")
+
+            # Sync filesystem
+            result1 = subprocess.run(['sync'], capture_output=True, text=True)
+
+            # Clear page cache, dentries and inodes
+            result2 = subprocess.run(['sudo', 'sh', '-c', 'echo 3 > /proc/sys/vm/drop_caches'],
+                                   capture_output=True, text=True)
+
+            return {
+                'action': 'clear_cache',
+                'status': 'SUCCESS' if result2.returncode == 0 else 'PARTIAL',
+                'details': f'Cache clearing attempted - sync: {result1.returncode}, drop_caches: {result2.returncode}',
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'real_operation': True,
+                'note': 'May require sudo privileges for full cache clearing'
+            }
+
+        except Exception as e:
+            return {
+                'action': 'clear_cache',
+                'status': 'ERROR',
+                'error': str(e),
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'real_operation': True
+            }
+
+    def view_logs(self):
+        """Actually open log viewer"""
+        try:
+            print("📋 REAL OPERATION: Opening log viewer...")
+
+            log_file = os.path.expanduser('~/.local/share/kde-memory-manager.log')
+
+            # Try to open with various log viewers
+            viewers = ['konsole', 'gnome-terminal', 'xterm']
+            opened = False
+
+            for viewer in viewers:
+                try:
+                    if viewer == 'konsole':
+                        result = subprocess.run([viewer, '-e', 'tail', '-f', log_file],
+                                              capture_output=True, text=True)
+                    else:
+                        result = subprocess.run([viewer, '-e', f'tail -f {log_file}'],
+                                              capture_output=True, text=True)
+                    opened = True
+                    break
+                except:
+                    continue
+
+            if not opened:
+                # Fallback: just return log content
+                if os.path.exists(log_file):
+                    with open(log_file, 'r') as f:
+                        content = f.read()
+                else:
+                    content = "Log file not found"
+
+                return {
+                    'action': 'view_logs',
+                    'status': 'FALLBACK',
+                    'details': 'No terminal viewer available, returning log content',
+                    'log_content': content[-2000:],  # Last 2000 chars
+                    'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'real_operation': True
+                }
+
+            return {
+                'action': 'view_logs',
+                'status': 'SUCCESS',
+                'details': f'Log viewer opened with {viewer}',
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'real_operation': True
+            }
+
+        except Exception as e:
+            return {
+                'action': 'view_logs',
+                'status': 'ERROR',
+                'error': str(e),
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'real_operation': True
+            }
+
+    def run_comprehensive_tests(self):
+        """Actually run real tests"""
+        try:
+            print("🧪 REAL OPERATION: Running comprehensive tests...")
+
+            test_results = {
+                'action': 'run_tests',
+                'status': 'SUCCESS',
+                'tests': [],
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'real_operation': True
+            }
+
+            # Test 1: Check if KDE Memory Guardian service is running
+            try:
+                result = subprocess.run(['systemctl', '--user', 'is-active', 'kde-memory-manager.service'],
+                                      capture_output=True, text=True)
+                test_results['tests'].append({
+                    'name': 'KDE Memory Guardian Service',
+                    'status': 'PASS' if result.returncode == 0 else 'FAIL',
+                    'details': f"Service status: {result.stdout.strip()}"
+                })
+            except Exception as e:
+                test_results['tests'].append({
+                    'name': 'KDE Memory Guardian Service',
+                    'status': 'ERROR',
+                    'details': str(e)
+                })
+
+            # Test 2: Check Plasma process
+            try:
+                result = subprocess.run(['pgrep', 'plasmashell'], capture_output=True, text=True)
+                test_results['tests'].append({
+                    'name': 'Plasma Process Check',
+                    'status': 'PASS' if result.returncode == 0 else 'FAIL',
+                    'details': f"Plasma PID: {result.stdout.strip() if result.returncode == 0 else 'Not running'}"
+                })
+            except Exception as e:
+                test_results['tests'].append({
+                    'name': 'Plasma Process Check',
+                    'status': 'ERROR',
+                    'details': str(e)
+                })
+
+            # Test 3: Memory usage check
+            try:
+                stats = self.get_memory_stats()
+                if 'system_memory' in stats:
+                    test_results['tests'].append({
+                        'name': 'Memory Statistics',
+                        'status': 'PASS',
+                        'details': f"System: {stats['system_memory']}, Plasma: {stats.get('plasma_memory', 'N/A')}"
+                    })
+                else:
+                    test_results['tests'].append({
+                        'name': 'Memory Statistics',
+                        'status': 'FAIL',
+                        'details': 'Could not retrieve memory stats'
+                    })
+            except Exception as e:
+                test_results['tests'].append({
+                    'name': 'Memory Statistics',
+                    'status': 'ERROR',
+                    'details': str(e)
+                })
+
+            return test_results
+
+        except Exception as e:
+            return {
+                'action': 'run_tests',
+                'status': 'ERROR',
+                'error': str(e),
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'real_operation': True
+            }
 
 def start_server(port=8000):
     """Start the web server"""

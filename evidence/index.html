@@ -153,52 +153,103 @@
     </div>
 
     <script>
-        function refreshStats() {
-            addLogEntry("🔄 Refreshing system statistics...");
-            // Simulate data refresh
-            setTimeout(() => {
-                document.getElementById('system-memory').textContent = Math.floor(Math.random() * 10 + 30) + '%';
-                document.getElementById('plasma-memory').textContent = Math.floor(Math.random() * 100 + 450) + ' MB';
-                document.getElementById('kwin-memory').textContent = Math.floor(Math.random() * 50 + 220) + ' MB';
-                addLogEntry("✅ Statistics refreshed successfully");
-            }, 1000);
+        async function refreshStats() {
+            addLogEntry("🔄 REAL OPERATION: Refreshing system statistics...");
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+
+                if (stats.system_memory) {
+                    document.getElementById('system-memory').textContent = stats.system_memory;
+                    document.getElementById('plasma-memory').textContent = stats.plasma_memory;
+                    document.getElementById('kwin-memory').textContent = stats.kwin_memory;
+                    addLogEntry(`✅ REAL: Statistics refreshed - System: ${stats.system_memory}, Plasma: ${stats.plasma_memory}, KWin: ${stats.kwin_memory}`);
+                } else {
+                    addLogEntry(`❌ REAL: Statistics refresh failed - ${stats.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                addLogEntry(`❌ REAL: Statistics refresh error - ${error.message}`);
+            }
         }
 
-        function restartPlasma() {
-            addLogEntry("🔄 Initiating Plasma restart...");
-            setTimeout(() => {
-                addLogEntry("✅ Plasma restarted successfully");
-            }, 2000);
+        async function restartPlasma() {
+            addLogEntry("🔄 REAL OPERATION: Initiating Plasma restart...");
+            try {
+                const response = await fetch('/api/restart-plasma', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.status === 'SUCCESS') {
+                    addLogEntry(`✅ REAL: Plasma restarted successfully - ${result.details}`);
+                } else {
+                    addLogEntry(`❌ REAL: Plasma restart failed - ${result.error || result.details}`);
+                }
+            } catch (error) {
+                addLogEntry(`❌ REAL: Plasma restart error - ${error.message}`);
+            }
         }
 
-        function clearCache() {
-            addLogEntry("🧹 Clearing system cache...");
-            setTimeout(() => {
-                addLogEntry("✅ System cache cleared");
-            }, 1500);
+        async function clearCache() {
+            addLogEntry("🧹 REAL OPERATION: Clearing system cache...");
+            try {
+                const response = await fetch('/api/clear-cache', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.status === 'SUCCESS') {
+                    addLogEntry(`✅ REAL: System cache cleared - ${result.details}`);
+                } else if (result.status === 'PARTIAL') {
+                    addLogEntry(`⚠️ REAL: Cache partially cleared - ${result.details}`);
+                } else {
+                    addLogEntry(`❌ REAL: Cache clearing failed - ${result.error || result.details}`);
+                }
+            } catch (error) {
+                addLogEntry(`❌ REAL: Cache clearing error - ${error.message}`);
+            }
         }
 
-        function viewLogs() {
-            addLogEntry("📋 Opening detailed logs...");
-            setTimeout(() => {
-                addLogEntry("ℹ️ Log viewer opened in new window");
-            }, 500);
+        async function viewLogs() {
+            addLogEntry("📋 REAL OPERATION: Opening detailed logs...");
+            try {
+                const response = await fetch('/api/view-logs', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.status === 'SUCCESS') {
+                    addLogEntry(`✅ REAL: Log viewer opened - ${result.details}`);
+                } else if (result.status === 'FALLBACK') {
+                    addLogEntry(`ℹ️ REAL: ${result.details}`);
+                    // Display log content in the interface
+                    if (result.log_content) {
+                        addLogEntry("📄 Recent log content:");
+                        const lines = result.log_content.split('\n').slice(-10);
+                        lines.forEach(line => {
+                            if (line.trim()) addLogEntry(`  ${line}`);
+                        });
+                    }
+                } else {
+                    addLogEntry(`❌ REAL: Log viewer failed - ${result.error || result.details}`);
+                }
+            } catch (error) {
+                addLogEntry(`❌ REAL: Log viewer error - ${error.message}`);
+            }
         }
 
-        function runTests() {
-            addLogEntry("🧪 Starting comprehensive test suite...");
-            setTimeout(() => {
-                addLogEntry("✅ Selenium tests: PASSED");
-            }, 1000);
-            setTimeout(() => {
-                addLogEntry("✅ Playwright tests: PASSED");
-            }, 2000);
-            setTimeout(() => {
-                addLogEntry("✅ Dogtail tests: PASSED");
-            }, 3000);
-            setTimeout(() => {
-                addLogEntry("🎉 All tests completed successfully!");
-            }, 4000);
+        async function runTests() {
+            addLogEntry("🧪 REAL OPERATION: Starting comprehensive test suite...");
+            try {
+                const response = await fetch('/api/run-tests', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.status === 'SUCCESS') {
+                    addLogEntry("✅ REAL: Test suite completed successfully");
+                    result.tests.forEach(test => {
+                        const emoji = test.status === 'PASS' ? '✅' : test.status === 'FAIL' ? '❌' : '⚠️';
+                        addLogEntry(`  ${emoji} REAL: ${test.name}: ${test.status} - ${test.details}`);
+                    });
+                } else {
+                    addLogEntry(`❌ REAL: Test suite failed - ${result.error}`);
+                }
+            } catch (error) {
+                addLogEntry(`❌ REAL: Test suite error - ${error.message}`);
+            }
         }
 
         function addLogEntry(message) {
