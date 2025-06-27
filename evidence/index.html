@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KDE Memory Guardian Dashboard</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -64,9 +67,13 @@
             color: white;
             padding: 12px 24px;
             border-radius: 25px;
-            cursor: pointer;
+            cursor: text;  /* Change cursor to text for selection */
             font-size: 1em;
             transition: all 0.3s ease;
+            user-select: all;  /* Allow full text selection */
+            -webkit-user-select: all;  /* Safari support */
+            -moz-user-select: all;     /* Firefox support */
+            -ms-user-select: all;      /* IE/Edge support */
         }
         button:hover {
             background: rgba(255, 255, 255, 0.3);
@@ -135,14 +142,14 @@
         </div>
 
         <div class="controls">
-            <button onclick="refreshStats()">🔄 Refresh Stats</button>
-            <button onclick="restartPlasma()">🔄 Restart Plasma</button>
-            <button onclick="clearCache()">🧹 Clear Cache</button>
-            <button onclick="viewLogs()">📋 View Logs</button>
-            <button onclick="runTests()">🧪 Run Tests</button>
+            <button onclick="refreshStats()" tabindex="0" aria-label="Refresh system statistics" role="button">🔄 Refresh Stats</button>
+            <button onclick="restartPlasma()" tabindex="0" aria-label="Restart Plasma desktop shell" role="button">🔄 Restart Plasma</button>
+            <button onclick="clearCache()" tabindex="0" aria-label="Clear system cache and memory" role="button">🧹 Clear Cache</button>
+            <button onclick="viewLogs()" tabindex="0" aria-label="View system logs" role="button">📋 View Logs</button>
+            <button onclick="runTests()" tabindex="0" aria-label="Run system tests" role="button">🧪 Run Tests</button>
         </div>
 
-        <div class="log-container" id="log-container">
+        <div class="log-container" id="log-output">
             <div class="log-entry">[2025-06-27 11:46:00] 🚀 KDE Memory Guardian Dashboard loaded</div>
             <div class="log-entry">[2025-06-27 11:46:01] ✅ System memory usage: 35% (Normal)</div>
             <div class="log-entry">[2025-06-27 11:46:01] ✅ Plasma memory usage: 503 MB (Normal)</div>
@@ -154,8 +161,8 @@
 
     <script>
         async function refreshStats() {
-            addLogEntry("🔄 REAL OPERATION: Refreshing system statistics...");
             try {
+                addLogEntry('🔄 Refreshing system statistics...');
                 const response = await fetch('/api/stats');
                 const stats = await response.json();
 
@@ -163,97 +170,114 @@
                     document.getElementById('system-memory').textContent = stats.system_memory;
                     document.getElementById('plasma-memory').textContent = stats.plasma_memory;
                     document.getElementById('kwin-memory').textContent = stats.kwin_memory;
-                    addLogEntry(`✅ REAL: Statistics refreshed - System: ${stats.system_memory}, Plasma: ${stats.plasma_memory}, KWin: ${stats.kwin_memory}`);
+
+                    addLogEntry(`✅ Stats refreshed - Memory: ${stats.system_memory}, Plasma: ${stats.plasma_memory}`);
                 } else {
-                    addLogEntry(`❌ REAL: Statistics refresh failed - ${stats.error || 'Unknown error'}`);
+                    addLogEntry('⚠️ Stats response missing expected data');
                 }
             } catch (error) {
-                addLogEntry(`❌ REAL: Statistics refresh error - ${error.message}`);
+                addLogEntry(`❌ Refresh failed: ${error.message}`);
+                console.error('Stats refresh error:', error);
             }
         }
 
         async function restartPlasma() {
-            addLogEntry("🔄 REAL OPERATION: Initiating Plasma restart...");
             try {
                 const response = await fetch('/api/restart-plasma', { method: 'POST' });
                 const result = await response.json();
 
-                if (result.status === 'SUCCESS') {
-                    addLogEntry(`✅ REAL: Plasma restarted successfully - ${result.details}`);
-                } else {
-                    addLogEntry(`❌ REAL: Plasma restart failed - ${result.error || result.details}`);
+                if (result.script_output) {
+                    result.script_output.split('\n').forEach(line => {
+                        if (line.trim()) addLogEntry(line);
+                    });
+                }
+                if (result.script_errors) {
+                    result.script_errors.split('\n').forEach(line => {
+                        if (line.trim()) addLogEntry(line);
+                    });
                 }
             } catch (error) {
-                addLogEntry(`❌ REAL: Plasma restart error - ${error.message}`);
+                addLogEntry(`Network error: ${error.message}`);
             }
         }
 
         async function clearCache() {
-            addLogEntry("🧹 REAL OPERATION: Clearing system cache...");
             try {
                 const response = await fetch('/api/clear-cache', { method: 'POST' });
                 const result = await response.json();
 
-                if (result.status === 'SUCCESS') {
-                    addLogEntry(`✅ REAL: System cache cleared - ${result.details}`);
-                } else if (result.status === 'PARTIAL') {
-                    addLogEntry(`⚠️ REAL: Cache partially cleared - ${result.details}`);
-                } else {
-                    addLogEntry(`❌ REAL: Cache clearing failed - ${result.error || result.details}`);
+                if (result.command_outputs) {
+                    result.command_outputs.forEach(cmd => {
+                        addLogEntry(`$ ${cmd.command}`);
+                        if (cmd.stdout) {
+                            cmd.stdout.split('\n').forEach(line => {
+                                if (line.trim()) addLogEntry(line);
+                            });
+                        }
+                        if (cmd.stderr) {
+                            cmd.stderr.split('\n').forEach(line => {
+                                if (line.trim()) addLogEntry(line);
+                            });
+                        }
+                        addLogEntry(`exit code: ${cmd.returncode}`);
+                    });
                 }
             } catch (error) {
-                addLogEntry(`❌ REAL: Cache clearing error - ${error.message}`);
+                addLogEntry(`Network error: ${error.message}`);
             }
         }
 
         async function viewLogs() {
-            addLogEntry("📋 REAL OPERATION: Opening detailed logs...");
             try {
+                addLogEntry('📋 Opening log viewer...');
                 const response = await fetch('/api/view-logs', { method: 'POST' });
                 const result = await response.json();
 
-                if (result.status === 'SUCCESS') {
-                    addLogEntry(`✅ REAL: Log viewer opened - ${result.details}`);
-                } else if (result.status === 'FALLBACK') {
-                    addLogEntry(`ℹ️ REAL: ${result.details}`);
-                    // Display log content in the interface
-                    if (result.log_content) {
-                        addLogEntry("📄 Recent log content:");
-                        const lines = result.log_content.split('\n').slice(-10);
-                        lines.forEach(line => {
-                            if (line.trim()) addLogEntry(`  ${line}`);
+                addLogEntry(`✅ ${result.details}`);
+
+                // Display log content in dashboard
+                if (result.log_content) {
+                    addLogEntry('=== LOG CONTENT ===');
+
+                    // Handle both string and array formats
+                    if (Array.isArray(result.log_content)) {
+                        result.log_content.forEach(line => {
+                            if (line.trim()) addLogEntry(line);
+                        });
+                    } else {
+                        result.log_content.split('\n').forEach(line => {
+                            if (line.trim()) addLogEntry(line);
                         });
                     }
+
+                    addLogEntry(`=== END LOG (${result.log_lines_shown || 'unknown'} lines) ===`);
                 } else {
-                    addLogEntry(`❌ REAL: Log viewer failed - ${result.error || result.details}`);
+                    addLogEntry('⚠️ No log content returned');
                 }
             } catch (error) {
-                addLogEntry(`❌ REAL: Log viewer error - ${error.message}`);
+                addLogEntry(`❌ Network error: ${error.message}`);
             }
         }
 
         async function runTests() {
-            addLogEntry("🧪 REAL OPERATION: Starting comprehensive test suite...");
             try {
                 const response = await fetch('/api/run-tests', { method: 'POST' });
                 const result = await response.json();
 
-                if (result.status === 'SUCCESS') {
-                    addLogEntry("✅ REAL: Test suite completed successfully");
+                if (result.tests) {
                     result.tests.forEach(test => {
-                        const emoji = test.status === 'PASS' ? '✅' : test.status === 'FAIL' ? '❌' : '⚠️';
-                        addLogEntry(`  ${emoji} REAL: ${test.name}: ${test.status} - ${test.details}`);
+                        addLogEntry(`${test.name}: ${test.status}`);
+                        if (test.details) addLogEntry(`  ${test.details}`);
+                        if (test.verification) addLogEntry(`  ${test.verification}`);
                     });
-                } else {
-                    addLogEntry(`❌ REAL: Test suite failed - ${result.error}`);
                 }
             } catch (error) {
-                addLogEntry(`❌ REAL: Test suite error - ${error.message}`);
+                addLogEntry(`Network error: ${error.message}`);
             }
         }
 
         function addLogEntry(message) {
-            const logContainer = document.getElementById('log-container');
+            const logContainer = document.getElementById('log-output');
             const timestamp = new Date().toLocaleTimeString();
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
@@ -264,6 +288,17 @@
 
         // Auto-refresh stats every 30 seconds
         setInterval(refreshStats, 30000);
-    </script>
+    
+        // Add keyboard accessibility
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                if (e.target.tagName === 'BUTTON') {
+                    e.preventDefault();
+                    e.target.click();
+                }
+            }
+        });
+        
+        </script>
 </body>
 </html>
